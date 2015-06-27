@@ -1,0 +1,3 @@
+[submodule "leport.wiki"]
+	path = leport.wiki
+	url = git@github.com:konn/leport.wiki
