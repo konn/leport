@@ -1,5 +1,5 @@
-Haskellレポート採点（適度に）自動化ツール
-====================================
+<img src="https://raw.github.com/wiki/konn/leport/imgs/logo.png" alt="Leport" height="30em"> - Haskell Report Rating Assistant
+========================================================================
 
 これは何？
 ----------
