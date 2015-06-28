@@ -1,0 +1,5 @@
+((haskell-mode . ((haskell-indent-spaces . 4)
+                  (haskell-process-use-ghci . t)))
+ (hamlet-mode . ((hamlet/basic-offset . 4)
+                 (haskell-process-use-ghci . t))))
+(setenv "HASKELL_PACKAGE_SANDBOX" "/Users/hiromi/.stackage/sandboxes/ghc-7.8.3/lts-2.15/x86_64-osx-ghc-7.8.3-packages.conf.d")

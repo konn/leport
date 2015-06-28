@@ -1,0 +1,11 @@
+flags:
+  leport-web:
+    library-only: false
+    dev: false
+packages:
+- '.'
+- location:
+    git: git@github.com:gwern/mueval.git
+    commit: d91fa64f057142f140d2f3c8e4e79d7a199bd924
+extra-deps: []
+resolver: lts-2.15

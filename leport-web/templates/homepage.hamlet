@@ -1,0 +1,9 @@
+<h2>λeport - The Haskell Report Rating Assistant
+<h3>Dashboard
+
+<div #container .container-fluid>
+     <div .row>
+       <div .col-xs-12>
+         <p #log>
+     <div .row>
+         <input type="text" #command>
