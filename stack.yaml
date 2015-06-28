@@ -2,3 +2,6 @@ flags: {}
 packages:
  - '.'
 resolver: lts-2.15
+extra-deps:
+- hfsevents-0.1.5
+- ./leport-web/

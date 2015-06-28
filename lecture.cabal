@@ -23,6 +23,7 @@ executable lecture
                      , base >=4 && <5
                      , haskell-src-exts >=1.14
                      , hint >= 0.4.2.3
+                     , mueval >= 0.9.1.1.1
                      , optparse-applicative >=0.8
                      , temporary  >=1.2.0.3
   -- hs-source-dirs:      
