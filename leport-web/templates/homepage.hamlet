@@ -1,9 +1,16 @@
 <h2>λeport - The Haskell Report Rating Assistant
-<h3>Dashboard
-
-<div #container .container-fluid>
-     <div .row>
-       <div .col-xs-12>
-         <p #log>
-     <div .row>
-         <input type="text" #command>
+$maybe _ <- muser
+    <h3>Dashboard
+    <ul>
+      <li>
+        <a href=@{RegisterR}>Create Report
+      $if not $ null reports
+        <li>Your reports:
+            <ul>
+                $forall Entity k r <- reports
+                  <li>
+                    <a href=@{ReportR k}>
+                      #{reportTitle r}
+                    \ - #{formatTime defaultTimeLocale "%Y/%m/%d %H:%M:%S" $ reportCreated r}
+$nothing
+  <p>You are not logged in. Please <a href=@{AuthR LoginR}>Login</a>

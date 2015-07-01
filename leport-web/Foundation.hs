@@ -69,6 +69,14 @@ instance Yesod App where
 
         pc <- widgetToPageContent $ do
             addStylesheet $ StaticR css_bootstrap_css
+            addScript $ StaticR js_codemirror_js
+            addScript $ StaticR js_codemirror_haskell_js
+            addScript $ StaticR js_codemirror_addon_closebrackets_js
+            addScript $ StaticR js_codemirror_addon_foldcode_js
+            addScript $ StaticR js_codemirror_addon_matchbrackets_js
+            addScript $ StaticR js_codemirror_addon_show_hint_js
+            addStylesheet $ StaticR css_codemirror_css
+            addStylesheet $ StaticR css_show_hint_css
             $(widgetFile "default-layout")
         withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
 
@@ -79,20 +87,12 @@ instance Yesod App where
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
-    -- Default to Authorized for now.
-    isAuthorized SettingsR _ = do
-      ma <- maybeAuth
-      case ma of
-        Nothing -> return $ Unauthorized "You must be logged in."
-        Just _  -> return Authorized
+
+    isAuthorized SettingsR _ = requireNormal
       
-    isAuthorized AdminR _ = do
-      ma <- maybeAuth
-      case ma of
-        Nothing -> return $ Unauthorized "You must be logged in."
-        Just (Entity _ usr)
-          | Admin <- userAccess usr -> return Authorized
-        _ -> return $ Unauthorized "Your are not admin"
+    isAuthorized AdminR _ = requireAdmin
+
+    -- Default to Authorized for now.
     isAuthorized _ _ = return Authorized
 
     -- This function creates static content files in the static folder
@@ -122,6 +122,22 @@ instance Yesod App where
             || level == LevelError
 
     makeLogger = return . appLogger
+
+requireNormal :: (YesodAuthPersist master, PersistEntity (AuthEntity master), Typeable (AuthEntity master), AuthId master ~ Key (AuthEntity master)) => HandlerT master IO AuthResult
+requireNormal = do
+    ma <- maybeAuth
+    case ma of
+      Nothing -> return $ Unauthorized "You must be logged in."
+      Just _  -> return $ Authorized
+
+requireAdmin :: (YesodAuthPersist master, AuthEntity master ~ User, AuthId master ~ Key User) => HandlerT master IO AuthResult
+requireAdmin = do
+  ma <- maybeAuth
+  case ma of
+    Nothing -> return $ Unauthorized "You must be logged in."
+    Just (Entity _ usr)
+      | Admin <- userAccess usr -> return Authorized
+    _ -> return $ Unauthorized "Your have to be admin."
 
 -- How to run database actions.
 instance YesodPersist App where
@@ -156,7 +172,7 @@ instance YesodAuth App where
 instance YesodAuthPersist App
 
 instance YesodJquery App where
-  urlJqueryJs = const $ Right "//ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"
+  urlJqueryJs = const $ Right "//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"
 
 instance YesodFay App where
   yesodFayCommand = handleFay

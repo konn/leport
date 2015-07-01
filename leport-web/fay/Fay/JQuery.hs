@@ -1,8 +1,12 @@
 {-# LANGUAGE EmptyDataDecls, OverloadedStrings, RebindableSyntax #-}
 module Fay.JQuery (module Fay.JQuery) where
-import Fay.FFI
 import Fay.Text
-import Prelude  (Int)
+#ifdef FAY
+import FFI
+#else
+import Fay.FFI
+#endif
+import Prelude  (Int,Bool)
 
 class Selectable a
 data Element
@@ -49,3 +53,22 @@ setAttr = ffi "%3['attr'](%1, %2)"
 
 getAttr :: Text -> JQuery -> Fay (Defined Text)
 getAttr = ffi "%2['attr'](%1)"
+
+click :: (Event -> Fay ()) -> JQuery -> Fay JQuery
+click = ffi "%2['click'](%1)"
+
+getProp :: Text -> JQuery -> Fay Text
+getProp = ffi "%2['prop'](%1)"
+
+setProp :: Text -> Text -> JQuery -> Fay JQuery
+setProp = ffi "%3['prop'](%1, %2)"
+
+bind :: EventType -> (Event -> Fay ()) -> JQuery -> Fay ()
+bind = ffi "%3['bind'](%1, %2)"
+
+preventDefault :: Event -> Fay ()
+preventDefault = ffi "%1['preventDefault']()"
+
+target :: Event -> Fay Element
+target = ffi "%1['target']"
+

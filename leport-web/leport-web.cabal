@@ -28,7 +28,10 @@ library
                      Handler.Admin
                      Handler.Fay
                      Handler.Settings
+                     Handler.Report
+                     Handler.Register
                      LXC
+                     Merger
                      Types
 
     if flag(dev) || flag(library-only)
@@ -54,7 +57,8 @@ library
                 TupleSections
                 RecordWildCards
 
-    build-depends: aeson                         >= 0.6        && < 0.9
+    build-depends: QuickCheck >= 2.7.6
+                 , aeson                         >= 0.6        && < 0.9
                  , base                          >= 4          && < 5
                  , bytestring                    >= 0.9        && < 0.11
                  , classy-prelude                >= 0.10.2
@@ -71,6 +75,8 @@ library
                  , fay-text >= 0.3.2.2
                  , file-embed
                  , ghc-mtl >= 1.2.1.0
+                 , haskell-src-exts >= 1.16.0.1
+                 , haskell-src-exts-qq >= 0.6.1
                  , hint >= 0.4.2.3
                  , hjsmin                        >= 0.1        && < 0.2
                  , http-conduit                  >= 2.1        && < 2.2

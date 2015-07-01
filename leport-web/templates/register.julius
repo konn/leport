@@ -1,0 +1,5 @@
+$("body").ready(function () {
+    var editor = CodeMirror.fromTextArea($("#spec")[0],{mode: "haskell", autoCloseBrackets: true,
+                                                        matchBrackets: true, lineNumbers: true});
+    $("button").click(function (e) {editor.save()});
+});

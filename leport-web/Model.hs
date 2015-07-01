@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Model where
 
 import ClassyPrelude.Yesod
@@ -15,6 +16,8 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"]
     $(persistFileWith lowerCaseSettings "config/models")
 
 persistMakeClassy ''User
+persistMakeClassy ''Report
+persistMakeClassy ''Answer
 
 instance HashDBUser User where
   userPasswordHash  = userPassword

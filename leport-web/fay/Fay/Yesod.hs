@@ -1,17 +1,18 @@
 -- NOTE: This file is auto-generated.
-{-# LANGUAGE CPP, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE CPP                #-}
 -- | Module to be shared between server and client.
 --
 -- This module must be valid for both GHC and Fay.
 module Fay.Yesod where
 
-import Prelude
+import           Prelude
 #ifdef FAY
-import FFI
+import           FFI
 #else
-import Fay.FFI
+import           Fay.FFI
 #endif
-import Data.Data
+import           Data.Data
 
 -- | A proxy type for specifying what type a command should return. The final
 -- field for each data constructor in a command datatype should be @Returns@.

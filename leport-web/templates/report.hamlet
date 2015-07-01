@@ -1,0 +1,35 @@
+<h2>#{reportTitle}
+<div #container .container-fluid>
+     <div .row>
+          <div .col-xs-12 .col-sm-12>
+               <h4>Spec
+               <button #specChoose .btn-default .btn>ファイル選択
+               <input type="file" #specFile>
+               <textarea .form-control #spec>
+                 #{reportSpec}
+          <div .col-xs-12 .col-sm-12>
+               <h4>Answer
+               <button #ansChoose .btn-default .btn>ファイル選択
+               <input type="file" #ansFile>
+               <textarea .form-control #answer>
+     <div .row>
+       <div .col-sm-12>
+         <button #check .btn-primary .btn>
+           Check
+         <button #delete-btn .btn-danger data-target="#delete-dialog" data-toggle="modal" .btn>
+           Delete
+     <div .row>
+         <p #log>
+         \ 
+
+<div .modal #delete-dialog tabindex="-1" role="dialog" aria-labelledby="delete-dialog-label">
+  <div .modal-dialog .modal-sm role="document">
+    <div .modal-content>
+      <div .modal-header .modal-header-danger>
+        <h4 .modal-title #delete-dialog-label>本当に削除しますか？
+      <div .modal-body>
+        本当にレポート「#{reportTitle}」を削除しますか？この操作は取り消せません。
+      <div .modal-footer>
+        <form>
+           <button type="button" .btn .btn-default data-dismiss="modal">Cancel
+           <button type="submit" .btn .btn-danger formmethod=post formaction=@{DeleteReportR rid}>Delete

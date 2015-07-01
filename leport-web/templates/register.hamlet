@@ -1,0 +1,6 @@
+<h2>新規レポート
+<div .container>
+<div .row>
+  <form method=post action=@{RegisterR} enctype=#{enctype}>
+    ^{widget}
+    <button .btn .btn-primary>Create
