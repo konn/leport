@@ -14,8 +14,16 @@ data Result a = Failure [Text]
               | Success a
               deriving (Eq, Typeable)
 
-data FayCommand = RunReport Text Text (Returns (Result Text))
+data FayCommand = RunReport Int Text (Returns (Result Text))
                 deriving (Eq, Typeable)
+
+data FayEvent = CheckResult { function   :: Text
+                            , succeeded  :: Bool
+                            , ghcMessage :: Text
+                            }
+              | Finished
+              | Exception [Text]
+             deriving (Eq, Typeable)
 
 #ifndef FAY
 deriving instance Show a => Show (Result a)
@@ -26,4 +34,8 @@ deriving instance Data a => Data (Result a)
 deriving instance Show   FayCommand
 deriving instance Read   FayCommand
 deriving instance Data   FayCommand
+
+deriving instance Show FayEvent
+deriving instance Read FayEvent
+deriving instance Data FayEvent
 #endif

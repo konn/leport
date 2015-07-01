@@ -36,6 +36,7 @@ import Handler.Admin
 import Handler.Settings
 import Handler.Register
 import Handler.Report
+import Handler.Fay
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -176,3 +177,4 @@ handler h = getAppSettings >>= makeFoundation >>= flip unsafeHandler h
 -- | Run DB queries
 db :: ReaderT SqlBackend (HandlerT App IO) a -> IO a
 db = handler . runDB
+

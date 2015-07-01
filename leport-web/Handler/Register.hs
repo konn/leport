@@ -9,6 +9,7 @@ import Language.Haskell.Exts (parseModule)
 import Language.Haskell.Exts (ParseResult(..))
 import Language.Haskell.Exts (prettyPrint)
 import Data.List (nub)
+import Language.Haskell.Exts (SrcLoc(..))
 
 postRegisterR :: Handler Html
 postRegisterR = do
@@ -16,15 +17,15 @@ postRegisterR = do
   ((res, wid), enc) <- runFormPost $ registerForm uid
   case res of
     FormMissing -> do
-      setMessage "データがありません。"
+      setDanger "データがありません。"
       serveRegister wid enc
     FormFailure err -> do
-      setMessage [shamlet|入力が不正です： #{unlines err}|]
+      setDanger [shamlet|入力が不正です： #{unlines err}|]
       serveRegister wid enc
     FormSuccess rep@Report{reportSpec=spec} -> 
       case parseModule $ unpack spec of
-        ParseFailed loc err -> do
-          setMessage $ toHtml $ "仕様がパーズ出来ません：" ++ tshow loc ++ pack err
+        ParseFailed (SrcLoc _n row col) err -> do
+          setDanger $ toHtml $ "仕様がパーズ出来ません：" ++ tshow row ++ "行" ++ tshow col ++ "文字目: " ++ pack err
           serveRegister wid enc
         ParseOk m -> do
           ans <- runDB $ do
@@ -38,9 +39,9 @@ postRegisterR = do
                   insert_ $ Rating (pack fun) k per
                 return $ Just k
           case ans of
-            Just k -> redirect $ ReportR k
+            Just k -> setSuccess "Report Created." >> redirect (ReportR k)
             Nothing -> do
-              setMessage "同名のレポートが既に存在しています。"
+              setDanger "同名のレポートが既に存在しています。"
               serveRegister wid enc
 
 getRegisterR :: Handler Html

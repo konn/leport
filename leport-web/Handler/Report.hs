@@ -1,7 +1,6 @@
 module Handler.Report where
 
 import Import
-import Settings.StaticFiles
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3,
                               withSmallInput)
 
@@ -18,6 +17,7 @@ getReportR rid = do
   defaultLayout $ do
     addScriptEither . urlJqueryJs =<< getYesod 
     addScript $ StaticR js_bootstrap_min_js
+    toWidget [julius|$("body").ready(function(){window['report_id'] = #{toJSON  rid};});|]
     $(widgetFile "report")
     $(fayFile "Report")
 
@@ -36,10 +36,10 @@ deleteReportR rid = join $ runDB $ do
         mapM_ (delete . entityKey) =<< selectList [RatingReportId ==. rid] []
         delete rid
         return $ do
-          setMessage "Report Deleted."
+          setSuccess "Report Deleted."
           redirect HomeR
       else return $ do
-        setMessage "You have not permitted to delete report!"
+        setDanger "You have not permitted to delete report!"
         redirect $ ReportR rid
 
 sampleForm :: Form (FileInfo, Text)

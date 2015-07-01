@@ -57,3 +57,19 @@ input[type=file] {
      border-top-left-radius: 5px;
      border-top-right-radius: 5px;
 }
+
+.success {
+    color: green;
+}
+
+.fatal {
+    color: #f0ad4e;
+}
+
+.warn {
+    color: red;
+}
+
+.normal {
+    color: #000;
+}

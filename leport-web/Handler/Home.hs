@@ -1,5 +1,6 @@
 module Handler.Home where
 
+import Handler.Fay
 import Import
 
 getHomeR :: Handler Html

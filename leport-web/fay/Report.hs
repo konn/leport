@@ -16,6 +16,11 @@ import Control.Monad (void)
 import Fay.Compiler.Prelude (unless)
 import JQuery hiding (append)
 import Fay.FFI
+
+ifThenElse :: Bool -> t -> t -> t
+ifThenElse True  p _ = p
+ifThenElse False _ q = q
+
 #endif
 
 default (Text)
@@ -101,6 +106,12 @@ message prompt txt = do
   void $ appendToJQuery prompt =<< setText txt =<< select "<span>"
   newl prompt
 
+close :: WebSocket -> Fay ()
+close = ffi "%1.close()"
+
+send :: WebSocket -> a -> Fay ()
+send = ffi "%1.send(JSON.stringify(a))"
+
 newl :: JQuery -> Fay ()
 newl prompt = void $ do
   void $ appendToJQuery prompt =<< select "<br>"
@@ -143,6 +154,23 @@ setupFile ed file btn = do
                     put "heyheyhey!!!"
                     write =<< targetFile =<< target e) file
 
+data WebSocket
+
+newWebSocket :: Text -> Fay WebSocket
+newWebSocket = ffi "new WebSocket(%1)"
+
+onOpen :: WebSocket -> (Event -> Fay ()) -> Fay ()
+onOpen = ffi "%1['onopen'] = %2"
+
+onClose :: WebSocket -> (Event -> Fay ()) -> Fay ()
+onClose = ffi "%1['onclose'] = %2"
+
+eventData :: Event -> a
+eventData = ffi "%1.data"
+
+onMessage :: WebSocket -> (Event -> Fay ()) -> Fay ()
+onMessage = ffi "%1['onmessage'] = %2"
+
 setCode :: Text -> CodeMirror -> Fay ()
 setCode = ffi "%2.setValue(%1)"
 
@@ -173,25 +201,41 @@ fileFile = ffi "%1.files[0]"
 
 runChecker :: JQuery -> JQuery -> JQuery -> JQuery -> CodeMirror -> CodeMirror -> Event -> Fay ()
 runChecker prompt chk specF ansF scm acm _ = do
+  rid <- getReportID
   mapM_ saveCM [scm,acm]
   put "Gokigen Uruwashu"
   spec <- getVal specF
   ans  <- getVal ansF
+  let normal  = putLog "normal"
+      success = putLog "success"
+      warn    = putLog "warn"  
+      fatal   = putLog "fatal"
+      putLog cls msg = do
+        void $ appendToJQuery prompt
+          =<< setText msg
+          =<< select ("<span ." `append` cls `append` ">")
+        newl prompt
   unless (T.null spec && T.null ans) $ do
     void $ disable chk
     message prompt "Checking..."
-    call (RunReport spec ans) $ \case
-      Success rsl -> do
-        void $ appendToJQuery prompt
-          =<< setAttr "style" "color: black"
-          =<< setText rsl
-          =<< select "<span .success>"
-        newl prompt
-        mapM_ enable [chk,specF,ansF]
+    call (RunReport rid ans) $ \case
+      Success url -> do
+        success "Compile Succeeded!"
+        sock <- newWebSocket url
+        onClose sock $ \_e -> do
+          normal "Connection closed."
+          mapM_ enable [chk,specF,ansF]
+        onMessage sock $ \e -> do
+          case eventData e of
+            CheckResult fun passed msg -> do
+              (if passed then success else warn) $ "Case " `append` fun `append` ": " `append` msg
+            Finished -> normal "Rating Finished." >> close sock
+            Exception ts -> do
+              fatal $ T.unlines $ "*** Unexpected Error: " : ts
+              close sock
       Failure ws -> do
-        void $ appendToJQuery prompt
-          =<< setAttr "style" "color: red"
-          =<< setText (T.unlines ws)
-          =<< select "<span .failure>"
-        newl prompt
+        fatal $ "*** Compilation Error: " `append` (T.unlines ws)
         mapM_ enable [chk,specF,ansF]
+
+getReportID :: Fay Int
+getReportID = ffi "window['report_id']"

@@ -186,10 +186,32 @@ instance RenderMessage App FormMessage where
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 
--- Note: Some functionality previously present in the scaffolding has been
--- moved to documentation in the Wiki. Following are some hopefully helpful
--- links:
---
--- https://github.com/yesodweb/yesod/wiki/Sending-email
--- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
--- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
+setDanger :: (MonadHandler m) => Html -> m ()
+setDanger msg = setMessage
+                [shamlet|<div .alert .alert-danger .alert-dismissible role="alert">
+                           <button type="button" .close data-dismiss="alert" aria-label="Close">
+                             <span aria-hidden="true">&times;
+                           <span .glyphicon .glyphicon-exclamation-sign aria-hidden="true"></span>
+                           <span .sr-only>
+                              Error:
+                           #{msg}|]
+
+setSuccess :: (MonadHandler m) => Html -> m ()
+setSuccess msg = setMessage
+                [shamlet|<div .alert .alert-success .alert-dismissible role="alert">
+                           <button type="button" .close data-dismiss="alert" aria-label="Close">
+                             <span aria-hidden="true">&times;
+                           <span .glyphicon .glyphicon-ok-sign aria-hidden="true"></span>
+                           <span .sr-only>
+                              Success:
+                           #{msg}|]
+
+setInfo :: (MonadHandler m) => Html -> m ()
+setInfo msg = setMessage
+                [shamlet|<div .alert-dismissible .alert .alert-info role="alert">
+                           <button type="button" .close data-dismiss="alert" aria-label="Close">
+                             <span aria-hidden="true">&times;
+                           <span .glyphicon .glyphicon-info-sign aria-hidden="true"></span>
+                           <span .sr-only>
+                              Info:
+                           #{msg}|]

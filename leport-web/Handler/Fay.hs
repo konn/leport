@@ -9,6 +9,7 @@ import Data.List (nub)
 import System.IO.Temp
 import Language.Haskell.Interpreter (setTopLevelModules)
 import Import.NoFoundation
+import Yesod.WebSockets
 import Language.Haskell.Exts.QQ
 import Language.Haskell.Exts               (Decl, ImportDecl (..))
 import Language.Haskell.Exts               (ImportSpec (IVar), Module (..))
@@ -23,6 +24,7 @@ import Language.Haskell.Interpreter (InterpreterError(..))
 import Language.Haskell.Interpreter (errMsg)
 import Merger
 import Language.Haskell.Exts (parseModule)
+import HscTypes (HscEnv)
 import Language.Haskell.Exts.SrcLoc (noLoc)
 import Language.Haskell.Interpreter (runInterpreter)
 import Language.Haskell.Interpreter.Unsafe (unsafeSetGhcOption)
@@ -30,6 +32,13 @@ import Language.Haskell.Interpreter (interpret)
 import Language.Haskell.Interpreter (as)
 import qualified Test.QuickCheck as QC
 import Language.Haskell.Exts (listE)
+-- import Import.NoFoundation
+import Language.Haskell.Interpreter (InterpreterT)
+import qualified Control.Monad.Ghc as Ghc
+import Language.Haskell.Interpreter (runGhc)
+import Fay.Convert (showToFay)
+import Data.Maybe (fromJust)
+import Data.Aeson.Encode (encode)
 
 deriving instance Typeable QC.Result
 
@@ -37,23 +46,33 @@ deriving instance Typeable QC.Result
 addDecl :: Decl -> Module -> Module
 addDecl d (Module sl mn mps mws mes idls dls) = Module sl mn mps mws mes idls (d : dls)
 
-handleFay :: CommandHandler app
-handleFay render command = do
-    case readFromFay command of
-      {-
-      Just (RegisterReport rname note src r) ->
-        registerReport rname note src
-      -}
-      Just (RunReport spec ans r) -> 
-        withModule render r spec $ \test ->
-        withModule render r ans $ \rslt ->
+handleFay :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) => CommandHandler site
+handleFay render command =
+  case readFromFay command of
+    Just (RunReport rid ans r) -> do
+      return ()
+      Just route <- getCurrentRoute
+      renderURI  <- getUrlRender
+      let uri = toWS $ renderURI route
+      Report{..} <- runDB $ get404 (ReportKey $ toEnum rid)
+      withModule render r reportSpec $ \test ->
+        withModule render r ans $ \rslt -> 
           executeReport test rslt >>= \case
-            Right result -> render r (Success $ tshow result)
-            Left  (UnknownError err) -> render r $ Failure [pack err]
-            Left  (WontCompile err)  -> render r $ Failure  (map (pack . errMsg) err)
-            Left  (NotAllowed err)   -> render r $ Failure $ [pack err]
-            Left  (GhcException err) -> render r $ Failure $ [pack err]
-      Nothing -> invalidArgs ["Invalid arguments"]
+            Right () -> render r (Success uri)
+            Left err -> render r $ Failure $ showError err
+    Nothing -> invalidArgs ["Invalid arguments"]
+
+showError :: (IsSequence c, Element c ~ Char) => InterpreterError -> [c]
+showError (UnknownError err) = [pack err]
+showError (WontCompile err)  = map (pack . errMsg) err
+showError (NotAllowed err)   = [pack err]
+showError (GhcException err) = [pack err]
+
+toWS :: (EqSequence m, IsString m) => m -> m
+toWS = replacePrefix "https://" "wss://" . replacePrefix "http://" "ws://"
+
+replacePrefix :: EqSequence m => m -> m -> m -> m
+replacePrefix from to str = maybe str (to++) $ stripPrefix from str
 
 withModule :: (t1 -> Result a -> t) -> t1 -> Text -> (Module -> t) -> t
 withModule render r src f =
@@ -61,8 +80,8 @@ withModule render r src f =
     ParseFailed loc err -> render r $ Failure ["Parse error: " ++ tshow loc, pack err]
     ParseOk m -> f m
 
-executeReport :: (MonadMask m, MonadIO m, Functor m)
-              => Module -> Module -> m (Either InterpreterError [(String, QC.Result)])
+executeReport :: (MonadHandler m, MonadBaseControl IO m, Applicative m, MonadMask m, MonadIO m, Functor m)
+              => Module -> Module -> m (Either InterpreterError ())
 executeReport test ans
   =  withSystemTempFile "Main.hs" $ \fp h -> do
   let propNs = extractProps test
@@ -83,12 +102,50 @@ executeReport test ans
                                       IVar NoNamespace (name "stdArgs")]))] $ mergeModules "Check" ltes lans
   hPutStrLn h src
   liftIO $ hClose h
-  runInterpreter $ do
+  eith <- runInterpreter $ do
     mapM_ (unsafeSetGhcOption . ("-trust " ++)) trusted
     mapM_ (unsafeSetGhcOption . ("-distrust " ++)) distrusted
     loadModules [fp]
     setTopLevelModules ["Check"]
-    join $ liftIO <$> interpret "main" (as :: IO [(String, QC.Result)])
+    (,) <$> interpret "()" (as :: ()) <*> runGhc Ghc.getSession
+  case eith of
+    Right ((), sess0) -> do
+      let loop _ [] = sendEvent Finished
+          loop sess (prop:ps) = do
+            let cmd = prettyPrint [hs|QC.quickCheckWithResult QC.stdArgs{chatty=False} $(var prop)|]
+            r <- withSession sess $ join $ liftIO <$> interpret cmd (as :: IO QC.Result)
+            case r of
+              Right (a, sess') -> sendEvent (fromQCResult (dropProp prop) a) >> loop sess' ps
+              Left err -> sendEvent $ Exception $ showError err
+      webSockets $ loop sess0 propNs
+      return $ Right ()
+    Left l -> return $ Left l
+
+dropProp :: Name -> String
+dropProp = fromJust . stripPrefix "prop_" . prettyPrint
+
+fromQCResult :: String -> QC.Result -> FayEvent
+fromQCResult n QC.Success {..} =
+  CheckResult (pack n) True (pack output)
+fromQCResult n QC.GaveUp { .. } =
+  CheckResult (pack n) False ("Timedout: " ++ pack output)
+fromQCResult n QC.Failure {..} =
+  CheckResult (pack n) False (pack $ unlines ["Failed: " ++ output, "reason: " ++ reason, "seed: " ++ show usedSeed])
+fromQCResult n QC.NoExpectedFailure {..} =
+  CheckResult (pack n) False (pack $ "Unexpected error!: " ++ output)
+
+sendEvent :: (MonadIO m) => FayEvent -> WebSocketsT m ()
+sendEvent = sendTextData . encode . fromJust . showToFay
+
+withSession :: (MonadMask m, MonadIO m, Applicative m)
+            => HscEnv -> InterpreterT m a -> m (Either InterpreterError (a, HscEnv))
+withSession sess0 act = runInterpreter $ do
+  runGhc $ Ghc.setSession sess0
+  mapM_ (unsafeSetGhcOption . ("-trust " ++)) trusted
+  mapM_ (unsafeSetGhcOption . ("-distrust " ++)) distrusted
+  setTopLevelModules ["Check"]
+  (,) <$> act <*> runGhc Ghc.getSession
+  
 
 extractProps :: Module -> [Name]
 extractProps =
