@@ -19,11 +19,10 @@ import Language.Haskell.Exts               (Namespace (NoNamespace))
 import Language.Haskell.Exts               (ParseResult (..), Tool (GHC), app)
 import Language.Haskell.Exts               (name, nameBind)
 import Language.Haskell.Exts               (prettyPrint, strE)
-import Language.Haskell.Exts               (var)
+import Language.Haskell.Exts               (var, ParseMode(fixities))
 import Language.Haskell.Interpreter (InterpreterError(..))
 import Language.Haskell.Interpreter (errMsg)
 import Merger
-import Language.Haskell.Exts (parseModule)
 import HscTypes (HscEnv)
 import Language.Haskell.Exts.SrcLoc (noLoc)
 import Language.Haskell.Interpreter (runInterpreter)
@@ -39,6 +38,8 @@ import Language.Haskell.Interpreter (runGhc)
 import Fay.Convert (showToFay)
 import Data.Maybe (fromJust)
 import Data.Aeson.Encode (encode)
+import Language.Haskell.Exts (defaultParseMode)
+import Language.Haskell.Exts (parseModuleWithMode)
 
 deriving instance Typeable QC.Result
 
@@ -48,7 +49,8 @@ addDecl d (Module sl mn mps mws mes idls dls) = Module sl mn mps mws mes idls (d
 
 handleFay :: (YesodPersist site, YesodPersistBackend site ~ SqlBackend) => CommandHandler site
 handleFay render command =
-  case readFromFay command of
+  case readFromFay command :: Maybe FayCommand of
+    {-
     Just (RunReport rid ans r) -> do
       return ()
       Just route <- getCurrentRoute
@@ -60,7 +62,8 @@ handleFay render command =
           executeReport test rslt >>= \case
             Right () -> render r (Success uri)
             Left err -> render r $ Failure $ showError err
-    Nothing -> invalidArgs ["Invalid arguments"]
+    -}
+    _ -> invalidArgs ["Invalid arguments"]
 
 showError :: (IsSequence c, Element c ~ Char) => InterpreterError -> [c]
 showError (UnknownError err) = [pack err]
@@ -76,7 +79,7 @@ replacePrefix from to str = maybe str (to++) $ stripPrefix from str
 
 withModule :: (t1 -> Result a -> t) -> t1 -> Text -> (Module -> t) -> t
 withModule render r src f =
-  case parseModule $ unpack src of
+  case parseModuleWithMode defaultParseMode {fixities = Nothing} $ unpack src of
     ParseFailed loc err -> render r $ Failure ["Parse error: " ++ tshow loc, pack err]
     ParseOk m -> f m
 
@@ -124,7 +127,7 @@ executeReport test ans
 dropProp :: Name -> String
 dropProp = fromJust . stripPrefix "prop_" . prettyPrint
 
-fromQCResult :: String -> QC.Result -> FayEvent
+fromQCResult :: String -> QC.Result -> ReportEvent
 fromQCResult n QC.Success {..} =
   CheckResult (pack n) True (pack output)
 fromQCResult n QC.GaveUp { .. } =
@@ -134,7 +137,7 @@ fromQCResult n QC.Failure {..} =
 fromQCResult n QC.NoExpectedFailure {..} =
   CheckResult (pack n) False (pack $ "Unexpected error!: " ++ output)
 
-sendEvent :: (MonadIO m) => FayEvent -> WebSocketsT m ()
+sendEvent :: (MonadIO m) => ReportEvent -> WebSocketsT m ()
 sendEvent = sendTextData . encode . fromJust . showToFay
 
 withSession :: (MonadMask m, MonadIO m, Applicative m)

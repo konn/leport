@@ -22,6 +22,8 @@ import Yesod.Default.Util (TemplateLanguage(..))
 import Yesod.Markdown (markdownToHtml, Markdown(..))
 import Text.Shakespeare.Text (textFile, textFileReload)
 import Yesod.Fay
+import Language.Haskell.TH (Exp(ConE))
+import Language.Haskell.TH (mkName)
 
 -- | Runtime settings to configure this application. These settings can be
 -- loaded from various sources: defaults, environment variables, config files,
@@ -110,7 +112,8 @@ combineSettings = def
 fayFile :: String -> Q Exp
 fayFile fp =
   let setting = (yesodFaySettings fp)
-                {yfsPackages = ["fay-base", "fay-jquery", "fay-text", "fay-base"]}
+                {yfsPackages = ["fay-base", "fay-ref", "fay-jquery", "fay-text", "fay-base"]
+                ,yfsSeparateRuntime = Just ("static", ConE (mkName "StaticR"))}
   in if appReloadTemplates compileTimeAppSettings
      then fayFileReload setting
      else fayFileProd   setting

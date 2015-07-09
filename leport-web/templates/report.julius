@@ -1,0 +1,118 @@
+$("body").ready(function(){
+    var report_id = #{toJSON  rid};
+    var wsaddr = "@{ReportR rid}".replace(/^http(s?):/,"ws$1:");
+    var codeMirrorConf = {mode: 'haskell',
+                          matchBrackets: true,
+                          lineNumbers: true,
+                          indentUnit: 2,
+                          autoCloseBrackets: true,
+                          indentWithTabs: false,
+                          tabSize: 2,
+                          smartIndent: true
+                         }
+
+    function setup_file(genCode, ident){
+        var file = $("#" + ident + "File");
+        $("#" + ident + "Choose").click(function(e){
+            file.click();
+        });
+        if (genCode) {
+            var cm = CodeMirror.fromTextArea($('#' + ident)[0],codeMirrorConf);
+            file.change(function(chEvt){
+                var reader = new FileReader();
+                reader.onload = function (evt){
+                    cm.setValue(evt.target.result);
+                };
+                reader.readAsText(chEvt.target.files[0]);
+            });
+            return cm;
+        }
+    };
+
+    var specCM   = setup_file(true,  "spec");
+    var answerCM = setup_file(true,  "answer");
+    setup_file(false, "multi");
+
+    $("#check").click(checkSingle);
+    $("#multiFile").change(checkMulti);
+
+    var prompt = $("#log");
+    function message(msg,cls) {
+        var tag;
+        if (cls) { tag = '<span class="' + cls + '">'  }
+        else { tag = '<span>' }
+        $(tag).text(msg).append('<br>').appendTo(prompt);
+        $("body").animate({scrollTop: prompt.offset().top + prompt.height()}, "fast");
+    };
+    function normal(msg) { message(msg, "normal"); }
+    function warn(msg) { message(msg, "warn"); }
+    function fatal(msg) { message(msg, "fatal"); }
+    function success(msg) { message(msg, "success"); }
+    function clear(){ prompt.html(''); }
+
+    function procMessage(sock, evt){
+        var msg = JSON.parse(evt.data);
+        console.log(msg);
+        console.log(msg['ghcMessage']);
+        switch(msg['instance']){
+            case "CheckResult":
+              var out = "Case " + msg['function'] + ': ' + msg['ghcMessage'];
+              if (msg.succeeded) {
+                  success(out);
+              } else {
+                  warn(out);
+              };
+              break;
+            case "Information":
+              msg.slot1.forEach(function(e){normal("message: " + e);});
+              break;
+            case "Finished":
+              success("Rating Finished.");
+              sock.close();
+              break;
+            case "Exception":
+              msg.slot1[0] = "*** Fatal Error: " + msg.slot1[0];
+              msg.slot1.forEach(fatal);
+              sock.close();
+              break;
+        }
+    };
+
+    function checkSingle(evt) {
+        answerCM.save();
+        specCM.save();
+        if ($("#spec").val() || $("#answer").val()) {
+            clear();
+            normal("Checking...");
+            var sock = new WebSocket(wsaddr);
+            sock.onclose = function(evt){
+                normal("Connection closed.");
+            };
+            sock.onopen = function(evt){
+                sock.send(JSON.stringify({instance: "Single", slot1: $("#answer").val()}));
+            };
+            sock.onmessage = function(evt){procMessage(sock,evt)};
+        }
+    }
+
+    function checkMulti(evt) {
+        clear();
+        var zip = evt.target.files[0];
+        $("#multiLabel").text(zip.name);
+        var reader = new FileReader();
+        reader.onload = function(loaded) {
+            var sock = new WebSocket(wsaddr);
+            sock.onclose = function(evt){
+                normal("Connection closed.");
+            };
+
+            sock.onopen = function(evt){
+                sock.send(JSON.stringify({instance: "Multiple"}));
+                sock.send(loaded.target.result);
+            };
+            sock.onmessage = function(evt){procMessage(sock,evt)};
+        };
+        reader.readAsArrayBuffer(zip);
+    }
+
+});
