@@ -22,4 +22,21 @@ database:
   poolsize: "_env:SQLITE_POOLSIZE:10"
 
 copyright: Hiromi ISHII (c) 2015
+
+package-dbs: []
+trusted-packages:
+  ["base", "containers", "QuickCheck","fgl","array"
+  ,"async","binary","attoparsec","case-insensitive"
+  ,"deepseq","hashable","haskeline"
+  ,"hoopl","html","mtl","integer-gmp"
+  ,"old-locale","old-time","time","parallel","parsec"
+  ,"pretty","primitive","random","regex-base","regex-compat"
+  ,"regex-posix","rts","split","stm","syb","template-haskell"
+  ,"text","transformers","unordered-containers","vector","xhtml"]
+
+distrusted-packages:
+  ["process", "HTTP", "Cabal", "HUnit"
+  ,"directory", "filepath", "ghc", "hint","ghc-prim"
+  ,"network","terminfo","unix","zlib"]
+  
 #analytics: UA-YOURCODE
