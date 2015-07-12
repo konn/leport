@@ -11,6 +11,12 @@ import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Auth.HashDB (authHashDB)
 import Handler.Fay
+import Language.Haskell.Exts (Module)
+import Language.Haskell.Exts (parseModule)
+import Language.Haskell.Exts (ParseResult (..))
+import Language.Haskell.Exts (SrcLoc (..))
+import Language.Haskell.Exts (prettyPrint)
+import Merger
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -216,3 +222,22 @@ setInfo msg = setMessage
                               Info:
                            #{msg}|]
 
+
+withModuleForm :: (t -> Text) -> FormResult t
+               -> Handler (Either Html (t, Module, [String]))
+withModuleForm f res = 
+  case res of
+    FormMissing -> return $ Left "データがありません。"
+    FormFailure err -> return $ Left [shamlet|入力が不正です： #{unlines err}|]
+    FormSuccess rep ->
+      let spec = f rep
+      in 
+      case parseModule $ unpack spec of
+        ParseFailed (SrcLoc _n row col) err ->
+          return $ Left $ toHtml $ mconcat ["仕様がパーズ出来ません：", tshow row
+                                           ,"行", tshow col
+                                           ,"文字目: ",
+                                            pack err]
+        ParseOk m ->
+          let props = mapMaybe (stripPrefix "prop_" . prettyPrint) $ extractFunNames m
+          in return $ Right (rep, m, props)

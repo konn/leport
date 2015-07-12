@@ -16,13 +16,15 @@
 
      <div .tab-content>
        <div role="tabpanel" .tab-pane .active #spec-pane> 
-         <div .row>
-              <div .col-xs-12 .col-sm-12>
-                   <h4>Spec
-                   <button #specChoose .btn-default .btn>ファイル選択
-                   <input type="file" #specFile>
-                   <textarea .form-control #spec>
-                     #{reportSpec}
+           <h4>Spec
+           <button #specChoose .btn-default .btn>ファイル選択
+           <input type="file" #specFile>
+           <form method=post action=@{ReportR rid} enctype=#{enc}>
+              ^{wid}
+              <button #delete-btn .btn-danger data-target="#delete-dialog" data-toggle="modal" .btn>
+                      Delete
+              <button .btn .btn-primary #save-spec>
+                      Save
        <div role="tabpanel" .tab-pane #single-pane> 
          <div .row>
           <div .col-xs-12 .col-sm-12>
@@ -34,8 +36,6 @@
             <div .col-sm-12>
               <button #check .btn-primary .btn>
                 Check
-              <button #delete-btn .btn-danger data-target="#delete-dialog" data-toggle="modal" .btn>
-                Delete
 
        <div role="tabpanel" .tab-pane #multi-pane ng-app="Multi" ng-controller="MultiCtrl"> 
          <div .row>

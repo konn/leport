@@ -40,11 +40,18 @@ import System.IO.Temp (withSystemTempDirectory)
 import System.IO (IOMode(ReadWriteMode))
 import System.IO (openFile)
 import qualified Language.Haskell.Exts as HSE
+import Yesod.Form.Bootstrap3 (renderBootstrap3)
+import Yesod.Form.Bootstrap3 (BootstrapFormLayout(BootstrapBasicForm))
 
 getReportR :: ReportId -> Handler Html
 getReportR rid = do
   r@Report {..} <- runDB $ get404 rid
   webSockets $ rateReport r
+  (wid, enc) <- generateFormPost $ updateForm $ Just reportSpec
+  serveReportR rid r wid enc
+
+serveReportR :: Key Report -> Report -> Widget -> Enctype -> HandlerT App IO Html
+serveReportR rid Report{..} wid enc = do
   rates <- map entityVal <$> runDB (selectList [ RatingReportId ==. rid ] [])
   defaultLayout $ do
     setTitle $ toHtml reportTitle
@@ -53,6 +60,26 @@ getReportR rid = do
     addScriptRemote "//ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.3/angular.min.js"
     -- $(fayFile "Report")
     $(widgetFile "report")
+
+
+postReportR :: ReportId -> Handler Html
+postReportR rid = do
+  r@Report {..} <- runDB $ get404 rid
+  rates <- map entityVal <$> runDB (selectList [ RatingReportId ==. rid ] [])
+  ((src, wid), enc) <- runFormPost $ updateForm Nothing
+  ans <- withModuleForm id src
+  case ans of
+    Left err -> setDanger err >> serveReportR rid r wid enc
+    Right (src', _m, tests) -> do
+      runDB $ do
+        let deads = filter ((`onotElem` map pack tests) . ratingFunction) rates
+            newbies = filter (`onotElem` map ratingFunction rates) $ map pack tests
+            newper = sum (map ratingRate deads) `div` length newbies
+        update rid [ReportSpec =. src']
+        mapM_ (deleteBy . UniqueRating rid . ratingFunction) deads
+        mapM_ (\a -> void $ insertUnique $ Rating a rid newper) newbies
+      setInfo "Updated report"
+      redirect $ ReportR rid
 
 rateReport :: (MonadLogger m, MonadMask m, MonadBaseControl IO m, MonadHandler m)
            => Report -> WebSocketsT m ()
@@ -239,3 +266,8 @@ addPragmas ps' (Module a b ps c d e f) =
 addImports :: [ImportDecl] -> Module -> Module
 addImports ims (Module a b c d e ims0 ds) =
   Module a b c d e (L.nub $ ims ++ ims0) ds
+
+updateForm :: Maybe Text -> Form Text
+updateForm msrc =
+  renderBootstrap3 BootstrapBasicForm $
+  unTextarea <$> areq textareaField "" {fsId = Just "spec"} (Textarea <$> msrc)
