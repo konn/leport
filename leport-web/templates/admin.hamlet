@@ -1,6 +1,21 @@
 <h2>Administrator Dashboard
 
-<p> At the end, you will be able to set up following things:
-<ol>
-  <li>User Access Control
-  <li>Special Setups
+<div #container .container-fluid>
+     <ul .nav .nav-tabs role="tablist">
+       <li role="presentation" .active>
+         <a href=#users-pane aria-controls="users-pane" role="tab" data-toggle="tab">
+           Users
+
+     <div .tab-content>
+       <div role="tabpanel" .tab-pane .active #users-pane>
+           <h3>Users
+           <h4>New User
+           <div .well .well-lg>
+             <form method=post enctype=#{addEnc} action=@{UserR}>
+               ^{addWid}
+               <button .btn-primary .btn>Create
+           <h4>Remove User
+           <div .well .well-lg>
+             <form method=post enctype=#{remEnc} action=@{RemoveUserR}>
+               ^{remWid}
+               <button .btn-danger .btn>Remove

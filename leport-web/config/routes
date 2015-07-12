@@ -4,9 +4,13 @@
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
-/         HomeR     GET POST
-/admin    AdminR    GET POST
-/settings SettingsR GET POST
+/           HomeR     GET POST
+/admin      AdminR    GET POST
+/admin/user UserR     POST
+/admin/user/remove RemoveUserR     POST
+
+/settings SettingsR GET
+
 /api      FaySiteR  FaySite getFaySite
 /report/#ReportId ReportR GET DELETE PUT POST
 /report/#ReportId/delete DeleteReportR POST

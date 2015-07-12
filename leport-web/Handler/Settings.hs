@@ -14,21 +14,11 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3,
 -- inclined, or create a single monolithic file.
 getSettingsR :: Handler Html
 getSettingsR = do
-    defaultLayout $ do
-      setTitle "User Settings"
-      $(widgetFile "settings")
+  defaultLayout $ do
+    setTitle "User Settings"
+    $(widgetFile "settings")
 
 postSettingsR :: Handler Html
 postSettingsR = do
-    ((result, formWidget), formEnctype) <- runFormPost sampleForm
-    let handlerName = "postSettingsR" :: Text
-        submission = case result of
-            FormSuccess res -> Just res
-            _ -> Nothing
 
-    redirect SettingsR
-
-sampleForm :: Form (FileInfo, Text)
-sampleForm = renderBootstrap3 BootstrapBasicForm $ (,)
-    <$> fileAFormReq "Choose a file"
-    <*> areq textField (withSmallInput "What's on the file?") Nothing
+  redirect SettingsR
