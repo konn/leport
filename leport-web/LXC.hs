@@ -7,8 +7,8 @@ module LXC
          module LXC.Compat
 #endif
        ) where
-#if darwin_HOST_OS
-import LXC.Compat
-#else
+#if linux_HOST_OS
 import System.LXC
+#else
+import LXC.Compat
 #endif
