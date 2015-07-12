@@ -59,6 +59,9 @@ data AppSettings = AppSettings
     -- ^ Copyright text to appear in the footer of the page
     , appAnalytics              :: Maybe Text
     -- ^ Google Analytics code
+    , appPackageDBs :: [Text]
+    , appTrustedPkgs :: [String]
+    , appDistrustedPkgs :: [String]
     }
 
 instance FromJSON AppSettings where
@@ -84,6 +87,10 @@ instance FromJSON AppSettings where
 
         appCopyright              <- o .: "copyright"
         appAnalytics              <- o .:? "analytics"
+
+        appPackageDBs             <- o .:? "package-dbs"      .!= []
+        appTrustedPkgs            <- o .:? "trusted-packages" .!= []
+        appDistrustedPkgs            <- o .:? "distrusted-packages" .!= []
 
         return AppSettings {..}
 

@@ -81,10 +81,10 @@ postReportR rid = do
       setInfo "Updated report"
       redirect $ ReportR rid
 
-rateReport :: (MonadLogger m, MonadMask m, MonadBaseControl IO m, MonadHandler m)
+rateReport :: (HandlerSite m ~ App, MonadLogger m, MonadMask m, MonadBaseControl IO m, MonadHandler m)
            => Report -> WebSocketsT m ()
 rateReport Report{..} =
-  loop `catch` \(ME.SomeException exc) -> ($logError $ "Execution error: " <> tshow exc) >> sendTextData Finished
+  loop `finally` sendTextData Finished
   where
     loop = receiveData >>= \case
       Single input ->
@@ -107,7 +107,8 @@ instance MonadLogger m => MonadLogger (InterpreterT m) where
 withFile' :: MonadBaseControl IO m => String -> (Handle -> m b) -> m b
 withFile' fp = withAcquire (mkAcquire (openFile fp ReadWriteMode) hClose)
 
-executeReport :: (MonadLogger m, MonadMask m, MonadBaseControl IO m, MonadHandler m)
+executeReport :: (HandlerSite m ~ App,
+                  MonadLogger m, MonadMask m, MonadBaseControl IO m, MonadHandler m)
               => Module -> Module -> WebSocketsT m ()
 executeReport test ans
   = withSystemTempDirectory "tmp" $ \tdir ->
@@ -129,9 +130,13 @@ executeReport test ans
     liftIO $ hClose hfp
     $logDebug $ "Main: " <> pack (prettyPrint $ mainModule [hs|return ()|])
     $logDebug $ "written to: " ++ pack fp <> ", " <> pack rfp
+    packdbs <- appPackageDBs . appSettings <$> getYesod
+    trusted <- appTrustedPkgs . appSettings <$> getYesod
+    distrusted <- appDistrustedPkgs . appSettings <$> getYesod
     eith <- runInterpreter $ do
       mapM_ (unsafeSetGhcOption . ("-trust " ++)) trusted
       mapM_ (unsafeSetGhcOption . ("-distrust " ++)) distrusted
+      mapM_ (unsafeSetGhcOption . ("-package-db "++) . unpack) packdbs
       $logDebug $ "Compiling: " <> pack fp <> ", " <> pack rfp
       loadModules [fp, rfp]
       $logDebug $ "Module Loaded."
@@ -243,21 +248,6 @@ deleteReportR rid = join $ runDB $ do
 extractProps :: Module -> [Name]
 extractProps =
   L.nub . filter (("prop_" `isPrefixOf`) . prettyPrint) . extractFunNames
-
-trusted :: [String]
-trusted = ["base", "containers", "QuickCheck","fgl","array"
-          ,"async","binary","attoparsec","case-insensitive"
-          ,"deepseq","hashable","haskeline"
-          ,"hoopl","html","mtl","integer-gmp"
-          ,"old-locale","old-time","time","parallel","parsec"
-          ,"pretty","primitive","random","regex-base","regex-compat"
-          ,"regex-posix","rts","split","stm","syb","template-haskell"
-          ,"text","transformers","unordered-containers","vector","xhtml"]
-
-distrusted :: [String]
-distrusted = ["process", "HTTP", "Cabal", "HUnit"
-             ,"directory", "filepath", "ghc", "hint","ghc-prim"
-             ,"network","terminfo","unix","zlib"]
 
 addPragmas :: [ModulePragma] -> Module -> Module
 addPragmas ps' (Module a b ps c d e f) =

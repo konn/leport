@@ -1,6 +1,6 @@
 # After you've edited this file, remove the following line to allow
 # `yesod keter` to build your bundle.
-user-edited: false
+$ user-edited: false
 
 # A Keter app is composed of 1 or more stanzas. The main stanza will define our
 # web application. See the Keter documentation for more information on
@@ -21,7 +21,8 @@ stanzas:
       # You can specify one or more hostnames for your application to respond
       # to. The primary hostname will be used for generating your application
       # root.
-      - www.leport-web.com
+      - konn-san.com/leport
+      - www.konn-san.com/leport
 
     # Enable to force Keter to redirect to https
     # Can be added to any stanza
@@ -30,7 +31,7 @@ stanzas:
   # Static files.
   - type: static-files
     hosts:
-      - static.leport-web.com
+      - konn-san.com/leport/static
     root: ../static
 
     # Uncomment to turn on directory listings.
@@ -40,9 +41,9 @@ stanzas:
   - type: redirect
 
     hosts:
-      - leport-web.com
+      - www.konn-san.com/leport
     actions:
-      - host: www.leport-web.com
+      - host: konn-san.com/leport
         # secure: false
         # port: 80
 
@@ -51,7 +52,7 @@ stanzas:
 
 # Use the following to automatically copy your bundle upon creation via `yesod
 # keter`. Uses `scp` internally, so you can set it to a remote destination
-# copy-to: user@host:/opt/keter/incoming
+copy-to: hiromi@sakura-vps:/home/hiromi/lecture-web
 
 # You can pass arguments to `scp` used above. This example limits bandwidth to
 # 1024 Kbit/s and uses port 2222 instead of the default 22
