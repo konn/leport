@@ -14,7 +14,6 @@ getHomeR = do
     defaultLayout $ do
         aDomId <- newIdent
         setTitle "Home"
-        $(fayFile "Home")
         $(widgetFile "homepage")
 
 postHomeR :: Handler Html
