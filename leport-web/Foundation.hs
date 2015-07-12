@@ -1,4 +1,4 @@
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PatternGuards, TypeSynonymInstances, FlexibleInstances #-}
 module Foundation where
 
 import Import.NoFoundation
@@ -18,6 +18,11 @@ import Language.Haskell.Exts (prettyPrint)
 import Merger
 import Language.Haskell.Exts (defaultParseMode,fixities)
 import Language.Haskell.Exts (parseModuleWithMode)
+import Control.Monad.Random (MonadRandom(..))
+import Control.Monad.Random (StdGen)
+import Control.Monad.Random (random, randomR, randomRs)
+import Control.Monad.Random (randoms)
+import Control.Monad.Random (split)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -29,6 +34,7 @@ data App = App
     , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
+    , appRandomGen   :: IORef StdGen
     }
 
 instance HasHttpManager App where
@@ -98,6 +104,7 @@ instance Yesod App where
     isAuthorized SettingsR _ = requireNormal
       
     isAuthorized AdminR _ = requireAdmin
+    isAuthorized UserR _ = requireAdmin
 
     -- Default to Authorized for now.
     isAuthorized _ _ = return Authorized
@@ -242,3 +249,23 @@ withModuleForm f res =
         ParseOk m ->
           let props = mapMaybe (stripPrefix "prop_" . prettyPrint) $ extractFunNames m
           in return $ Right (rep, m, props)
+
+wrapRand :: (StdGen -> (a, StdGen)) -> Handler a
+wrapRand rand = do
+  genRef <- appRandomGen <$> getYesod
+  atomicModifyIORef' genRef $ \g ->
+    let (g',a) = rand g
+    in (a, g')
+{-# INLINE wrapRand #-}
+
+instance MonadRandom Handler where
+  getRandom = wrapRand random
+  {-# INLINE getRandom #-}
+  getRandoms = wrapRand (\g -> let (g1, g2) = split g in (randoms g1, g2))
+  {-# INLINE getRandoms #-}
+  getRandomR ran = wrapRand (randomR ran)
+  {-# INLINE getRandomR #-}
+  getRandomRs ran = wrapRand (\g -> let (g1, g2) = split g in (randomRs ran g1, g2))
+  {-# INLINE getRandomRs #-}
+
+

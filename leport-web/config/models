@@ -4,7 +4,7 @@ User
     password Text Maybe
     access Access
     UniqueUser ident
-    deriving Typeable
+    deriving Typeable Eq Ord Show
 
 Report json
     title     Text
