@@ -12,11 +12,12 @@ import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Auth.HashDB (authHashDB)
 import Handler.Fay
 import Language.Haskell.Exts (Module)
-import Language.Haskell.Exts (parseModule)
 import Language.Haskell.Exts (ParseResult (..))
 import Language.Haskell.Exts (SrcLoc (..))
 import Language.Haskell.Exts (prettyPrint)
 import Merger
+import Language.Haskell.Exts (defaultParseMode,fixities)
+import Language.Haskell.Exts (parseModuleWithMode)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -232,7 +233,7 @@ withModuleForm f res =
     FormSuccess rep ->
       let spec = f rep
       in 
-      case parseModule $ unpack spec of
+      case parseModuleWithMode defaultParseMode { fixities = Nothing } $ unpack spec of
         ParseFailed (SrcLoc _n row col) err ->
           return $ Left $ toHtml $ mconcat ["仕様がパーズ出来ません：", tshow row
                                            ,"行", tshow col
