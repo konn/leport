@@ -57,7 +57,7 @@ getReportR rid = do
 rateReport :: (MonadLogger m, MonadMask m, MonadBaseControl IO m, MonadHandler m)
            => Report -> WebSocketsT m ()
 rateReport Report{..} =
-  loop `catch` \(ME.SomeException exc) -> ($logError $ "Execution error: " <> tshow exc) >> sendTextData Finished
+  loop `finally` sendTextData Finished
   where
     loop = receiveData >>= \case
       Single input ->
