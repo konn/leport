@@ -1,68 +1,24 @@
 <h2>#{reportTitle}
 <div #container .container-fluid>
-     <ul .nav .nav-tabs role="tablist">
-       <li role="presentation" .active>
-         <a href=#spec-pane aria-controls="spec-pane" role="tab" data-toggle="tab">
-           Spec
-       <li role="presentation">
-         <a href=#single-pane aria-controls="single-pane" role="tab" data-toggle="tab">
-           Single Answer
-       <li role="presentation">
-         <a href=#multi-pane aria-controls="multi-pane" role="tab" data-toggle="tab">
-           Multiple Answer
-       <li role="presentation">
-         <a href=#settings-pane aria-controls="settings-pane" role="tab" data-toggle="tab">
-           Settings
-
-     <div .tab-content>
-       <div role="tabpanel" .tab-pane .active #spec-pane> 
-         <div .row>
-              <div .col-xs-12 .col-sm-12>
-                   <h4>Spec
-                   <button #specChoose .btn-default .btn>ファイル選択
-                   <input type="file" #specFile>
-                   <textarea .form-control #spec>
-                     #{reportSpec}
-       <div role="tabpanel" .tab-pane #single-pane> 
-         <div .row>
-          <div .col-xs-12 .col-sm-12>
-               <h4>Single Answer
-               <button #answerChoose .btn-default .btn>ファイル選択
-               <input type="file" #answerFile>
-               <textarea .form-control #answer>
-          <div .row>
-            <div .col-sm-12>
-              <button #check .btn-primary .btn>
-                Check
-              <button #delete-btn .btn-danger data-target="#delete-dialog" data-toggle="modal" .btn>
-                Delete
-
-       <div role="tabpanel" .tab-pane #multi-pane ng-app="Multi" ng-controller="MultiCtrl"> 
-         <div .row>
-           <div .col-xs-12 .col-sm-12>
-               <h4>Multiple Answer
-               <button #multiChoose .btn-default .btn>ファイル選択
-               <label for="multiFile" #multiLabel>
-               <input type="file" #multiFile>
-         <div .row>
-              <table .table .table-striped>
-                <th>
-                  <td>
-                    \#
-                  <td>Name
-                  $forall r <- rates
-                      <td>#{ratingFunction r}
-                <tr ng-repeat="student in $scope.checkResults">
-                   <td>{{ student.id }}
-                   <td>{{ student.name }}
-                   $forall r <- rates
-                      <td>{{ student.#{ratingFunction r} }}
-
-       <div role="tabpanel" .tab-pane #settings-pane> 
-         <div .row>
-          <div .col-xs-12 .col-sm-12>
-               <h4>Settings
-               
+     <div .row>
+        <div .col-xs-12 .col-sm-12>
+             <h4>Spec
+             <button #specChoose .btn-default .btn>ファイル選択
+             <input type="file" #specFile>
+             <textarea .form-control #spec>
+               #{reportSpec}
+        <div .col-xs-12 .col-sm-12>
+             <h4>Answer
+             <button #answerChoose .btn-default .btn>ファイル選択
+             <input type="file" #answerFile>
+             <textarea .form-control #answer>
+        <div .row>
+          <div .col-sm-12>
+            <button #check .btn-primary .btn>
+              Check
+            <button #delete-btn .btn-danger data-target="#delete-dialog" data-toggle="modal" .btn>
+              Delete
+           
 
      <div .row>
          <p #log>
