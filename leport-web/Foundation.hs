@@ -102,6 +102,7 @@ instance Yesod App where
     isAuthorized RobotsR _ = return Authorized
 
     isAuthorized SettingsR _ = requireNormal
+    isAuthorized (ReportR _) _ = requireNormal
       
     isAuthorized AdminR _ = requireAdmin
     isAuthorized UserR _ = requireAdmin

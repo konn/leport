@@ -9,7 +9,8 @@
 /admin/user UserR     POST
 /admin/user/remove RemoveUserR     POST
 
-/settings SettingsR GET
+/settings SettingsR  GET  POST
+
 
 /api      FaySiteR  FaySite getFaySite
 /report/#ReportId ReportR GET DELETE PUT POST

@@ -5,6 +5,7 @@ import Control.Monad.Random
 import Settings.StaticFiles
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3,
                               withSmallInput)
+import Yesod.Auth.HashDB (setPassword)
 
 postRemoveUserR :: Handler Html
 postRemoveUserR = do
@@ -52,7 +53,7 @@ postUserR = do
     FormSuccess usr0 -> do
       let pwLetters = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9']
       tmpPass <- pack <$> replicateM 10 (uniform pwLetters)
-      let usr = usr0 { userPassword = Just tmpPass }
+      usr <- setPassword tmpPass usr0
       r <- runDB $ insertUnique usr
       case r of
         Nothing -> do
@@ -63,7 +64,6 @@ postUserR = do
         Just _ -> do
           setInfo $ [shamlet|登録完了：#{userScreenName usr} (PASS: #{tmpPass})|]
           redirect AdminR
-
 
 removeAccountForm :: [User] -> Form User
 removeAccountForm usrs = renderBootstrap3 BootstrapBasicForm $
