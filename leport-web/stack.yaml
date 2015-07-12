@@ -8,10 +8,6 @@ packages:
      git: git@github.com:mboes/haskell-src-exts-qq.git
      commit: cf7b17e07a338e16a729c8bdd6575583ae932246
    extra-dep: true
- - location:
-     git: git@github.com:kazu-yamamoto/ghc-mod.git
-     commit: bfa0b965ee3497f5f41d261072dc6bae0af00a06
-   extra-dep: true
 extra-deps:
 - yesod-markdown-0.9.4
 - hfsevents-0.1.5
