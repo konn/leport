@@ -21,7 +21,7 @@
            <input type="file" #specFile>
            <form method=post action=@{ReportR rid} enctype=#{enc}>
               ^{wid}
-              <button #delete-btn .btn-danger data-target="#delete-dialog" data-toggle="modal" .btn>
+              <span #delete-btn .btn-danger data-target="#delete-dialog" data-toggle="modal" .btn>
                       Delete
               <button .btn .btn-primary #save-spec>
                       Save

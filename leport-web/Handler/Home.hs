@@ -2,6 +2,8 @@ module Handler.Home where
 
 import Handler.Fay
 import Import
+import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm))
+import Yesod.Form.Bootstrap3 (renderBootstrap3)
 
 getHomeR :: Handler Html
 getHomeR = do
@@ -10,7 +12,7 @@ getHomeR = do
     reports <- case muser of
       Nothing -> return []
       Just (Entity k _) ->
-        runDB $ selectList [ReportOwnerId ==. k] [Desc ReportCreated]
+        runDB $ selectList [] [Desc ReportCreated]
     defaultLayout $ do
         aDomId <- newIdent
         setTitle "Home"

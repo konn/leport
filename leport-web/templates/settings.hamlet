@@ -4,3 +4,8 @@
 <ol>
   <li>Change User Name
   <li>Special Setups
+
+<div .well .well-lg>
+  <form method=post action=@{SettingsR} enctype=#{pwEnc}>
+      ^{pwForm}
+      <button .btn .btn-primary>Change

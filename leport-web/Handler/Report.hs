@@ -255,7 +255,7 @@ trusted = ["base", "containers", "QuickCheck","fgl","array"
           ,"text","transformers","unordered-containers","vector","xhtml"]
 
 distrusted :: [String]
-distrusted = ["process", "HTTP", "Cabal", "HUnit", "OpenGL"
+distrusted = ["process", "HTTP", "Cabal", "HUnit"
              ,"directory", "filepath", "ghc", "hint","ghc-prim"
              ,"network","terminfo","unix","zlib"]
 
