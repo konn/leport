@@ -62,6 +62,6 @@ mergeModules :: String -> Module -> Module -> Module
 mergeModules n (Module _ _ ps1 wt1 mex1 imp1 ds1) (Module l _ ps2 wt2 mex2 imp2 ds2) =
   Module l (ModuleName n) (sort $ nub $ ps1 ++ ps2)
          (wt2 <|> wt1)
-         ((fromMaybe [] mex1 ++) <$> mex2)
+         Nothing -- ((fromMaybe [] mex1 ++) <$> mex2)
          (imp1 ++ imp2)
          (foldr (insertFunDecl) ds2 (shrink ds1 ds2))

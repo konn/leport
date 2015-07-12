@@ -73,8 +73,8 @@ library
                  , fast-logger                   >= 2.2        && < 2.4
                  , fay >= 0.23.1.6
                  , fay-jquery >= 0.6.0.3
-                 , fay-text >= 0.3.2.2
                  , fay-ref >= 0.1.0.0
+                 , fay-text >= 0.3.2.2
                  , file-embed
                  , ghc >= 7.8.3
                  , ghc-mtl >= 1.2.1.0

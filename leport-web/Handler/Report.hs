@@ -25,11 +25,9 @@ import Language.Haskell.Interpreter.Unsafe (unsafeSetGhcOption)
 import Language.Haskell.Interpreter (interpret)
 import Language.Haskell.Interpreter (as)
 import qualified Test.QuickCheck as QC
-import Language.Haskell.Exts (listE)
 import Language.Haskell.Exts (defaultParseMode)
 import Language.Haskell.Exts (parseModuleWithMode)
 import Yesod.WebSockets (WebSocketsT)
-import System.IO.Temp (withSystemTempFile)
 import Language.Haskell.Interpreter (loadModules)
 import Language.Haskell.Interpreter (setTopLevelModules)
 import Data.Maybe (fromJust)
@@ -38,22 +36,28 @@ import qualified Control.Monad.Catch as ME
 import Language.Haskell.Interpreter (InterpreterT)
 import Control.Monad.Logger (monadLoggerLog)
 import qualified Data.ByteString.Lazy as LBS
+import System.IO.Temp (withSystemTempDirectory)
+import System.IO (IOMode(ReadWriteMode))
+import System.IO (openFile)
+import qualified Language.Haskell.Exts as HSE
 
 getReportR :: ReportId -> Handler Html
 getReportR rid = do
   r@Report {..} <- runDB $ get404 rid
   webSockets $ rateReport r
+  rates <- map entityVal <$> runDB (selectList [ RatingReportId ==. rid ] [])
   defaultLayout $ do
     setTitle $ toHtml reportTitle
     addScriptEither . urlJqueryJs =<< getYesod 
     addScript $ StaticR js_bootstrap_min_js
+    addScriptRemote "//ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.3/angular.min.js"
     -- $(fayFile "Report")
     $(widgetFile "report")
 
 rateReport :: (MonadLogger m, MonadMask m, MonadBaseControl IO m, MonadHandler m)
            => Report -> WebSocketsT m ()
 rateReport Report{..} =
-  loop `finally` sendTextData Finished
+  loop `catch` \(ME.SomeException exc) -> ($logError $ "Execution error: " <> tshow exc) >> sendTextData Finished
   where
     loop = receiveData >>= \case
       Single input ->
@@ -73,54 +77,87 @@ rateReport Report{..} =
 instance MonadLogger m => MonadLogger (InterpreterT m) where
   monadLoggerLog loc src lvl msg = lift $ monadLoggerLog loc src lvl msg
 
+withFile' :: MonadBaseControl IO m => String -> (Handle -> m b) -> m b
+withFile' fp = withAcquire (mkAcquire (openFile fp ReadWriteMode) hClose)
+
 executeReport :: (MonadLogger m, MonadMask m, MonadBaseControl IO m, MonadHandler m)
               => Module -> Module -> WebSocketsT m ()
 executeReport test ans
-  =  withSystemTempFile "Main.hs" $ \fp h -> do
-  $logDebug ("running: " <> pack fp)
-  let propNs = extractProps test
-      props = listE $ map (app [hs|QC.property|] . var) propNs
-      funcs = listE $ map strE $ mapMaybe (stripPrefix "prop_" . prettyPrint) propNs
-      ma = [dec|main = return . zip $funcs =<< mapM (QC.quickCheckWithResult QC.stdArgs{chatty=False}) $(props)|]
-      missing = map (Ident . drop 5.prettyPrint) propNs L.\\ (extractFunNames ans ++ extractFunNames test)
-      missDec = map (\p -> nameBind noLoc p (app (var $ name "error") $ strE "Not Implemented")) missing
-      ltes = addDecl ma test
-      lans = foldr addDecl ans missDec
-      src = prettyPrint $ addPragmas [LanguagePragma noLoc [name "Safe"]
-                                     ,OptionsPragma noLoc  (Just GHC) "-fpackage-trust"] $
-            addImports [ImportDecl noLoc (ModuleName "Test.QuickCheck") True False False Nothing
-                        (Just (ModuleName "QC"))
-                       (Just (False, [IVar NoNamespace (name "quickCheckWithResult"),
-                                      IVar NoNamespace (name "property"),
-                                      IVar NoNamespace (name "chatty"),
-                                      IVar NoNamespace (name "stdArgs")]))] $ mergeModules "Main" ltes lans
-  hPutStrLn h src
-  liftIO $ hClose h
-  $logDebug $ "written to: " ++ pack fp
-  void $ runInterpreter $ do
-    mapM_ (unsafeSetGhcOption . ("-trust " ++)) trusted
-    mapM_ (unsafeSetGhcOption . ("-distrust " ++)) distrusted
-    $logDebug $ "Compiling: " <> pack fp
-    loadModules [fp]
-    $logDebug $ "Module Loaded."
-    setTopLevelModules ["Main"]
-    comp <- ME.try $ interpret "()" (as :: ())
-    case comp of
-      Left err -> lift $ sendTextData (Exception $ showError err)
-      Right () -> do
-        $logDebug "successfully compiled."
-        lift $ sendTextData $ Information ["Compilation successed."]
-        $logDebug "booting..."
-        loop propNs
+  = withSystemTempDirectory "tmp" $ \tdir ->
+    let fp  = tdir ++ "/Check.hs"
+        rfp = tdir ++ "/Main.hs"
+    in withFile' fp $ \h -> withFile' rfp $ \hfp -> do
+    $logDebug ("running: " <> pack fp)
+    let propNs = extractProps test
+        missing = map (Ident . drop 5.prettyPrint) propNs L.\\ (extractFunNames ans ++ extractFunNames test)
+        missDec = map (\p -> nameBind noLoc p (app (var $ name "error") $ strE "Not Implemented")) missing
+        lans = foldr addDecl ans missDec
+        src = prettyPrint $ addPragmas [LanguagePragma noLoc [name "Safe"]
+                                       ,OptionsPragma noLoc  (Just GHC) "-fpackage-trust"] $
+              mergeModules "Check" test lans
+    $logDebug $ "Check: " <> pack src
+    hPutStrLn h src
+    liftIO $ hClose h
+    hPutStrLn hfp $ prettyPrint $ mainModule [hs|return ()|]
+    liftIO $ hClose hfp
+    $logDebug $ "Main: " <> pack (prettyPrint $ mainModule [hs|return ()|])
+    $logDebug $ "written to: " ++ pack fp <> ", " <> pack rfp
+    eith <- runInterpreter $ do
+      mapM_ (unsafeSetGhcOption . ("-trust " ++)) trusted
+      mapM_ (unsafeSetGhcOption . ("-distrust " ++)) distrusted
+      $logDebug $ "Compiling: " <> pack fp <> ", " <> pack rfp
+      loadModules [fp, rfp]
+      $logDebug $ "Module Loaded."
+      setTopLevelModules ["Main"]
+      comp <- ME.try $ join $ liftIO <$> interpret "Main.main" (as :: IO ())
+      case comp of
+        Left err -> lift $ sendTextData (Exception $ showError err)
+        Right () -> do
+          $logDebug "successfully compiled."
+          lift $ sendTextData $ Information ["Compilation successed."]
+          $logDebug "booting..."
+          loop propNs
+    case eith of
+      Right a -> return a
+      Left err -> sendTextData $ Exception $ showError err
   where
     loop [] = return ()
     loop (prop:ps) = do
       $logDebug $ "checking: " <> (tshow prop)
-      let cmd = prettyPrint [hs|QC.quickCheckWithResult QC.stdArgs{chatty=False} $(var prop)|]
-      r <- ME.try $ join $ liftIO <$> interpret cmd (as :: IO QC.Result)
+      let cmd = prettyPrint [hs|QC.quickCheckWithResult QC.stdArgs{QC.chatty=False} $(var prop) `race` threadDelay (10*10^6) |]
+      $logDebug $ "executing: " <> pack cmd
+      r <- ME.try $ join $ liftIO <$> interpret cmd (as :: IO (Either QC.Result ()))
+             -- `race` liftIO (threadDelay (10*10^(6 :: Int)))
       case r of
-        Right a -> lift (sendTextData $ fromQCResult (dropProp prop) a) >> loop ps
+        Right (Left a)   -> lift (sendTextData $ fromQCResult (dropProp prop) a) >> loop ps
+        Right (Right ()) -> lift $ sendTextData $
+                            CheckResult (pack $ dropProp prop) False $
+                            "Timeout (10secs)"
         Left err -> lift $ sendTextData $ Exception $ showError err
+
+mainModule :: HSE.Exp -> Module
+mainModule mbody = Module noLoc (ModuleName "Main") [] Nothing Nothing
+                   [ImportDecl
+                      noLoc (ModuleName "Check") False
+                      False False Nothing (Just (ModuleName "C")) $ Just (True, [HSE.IAbs $ Ident "main"])
+                   ,ImportDecl
+                      noLoc (ModuleName "Control.Concurrent.Async") False
+                      False False Nothing Nothing $ Just (False, [HSE.IAbs $ Ident "race"])
+                   ,ImportDecl
+                      noLoc (ModuleName "Control.Concurrent") False
+                      False False Nothing Nothing $ Just (False, [HSE.IAbs $ Ident "threadDelay"])
+                   ,ImportDecl noLoc (ModuleName "Test.QuickCheck") True False False Nothing
+                          (Just (ModuleName "QC"))
+                         (Just (False, [IVar NoNamespace (name "quickCheckWithResult"),
+                                        IVar NoNamespace (name "property"),
+                                        IVar NoNamespace (name "chatty"),
+                                        IVar NoNamespace (name "stdArgs")]))
+                   ,ImportDecl noLoc (ModuleName "Test.QuickCheck") False False False Nothing
+                          Nothing
+                         (Just (False, [IVar NoNamespace (name "Result")]))
+                   ]
+                   [[dec|main :: IO ()|],
+                    [dec|main = $(mbody)|]]
 
 
 showError :: (IsSequence c, Element c ~ Char) => InterpreterError -> [c]

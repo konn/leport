@@ -1,3 +1,9 @@
+angular.module('Multi', [])
+    .controller('MultiCtrl', ['$scope', function ($scope) {
+        $scope.checkResults = {};
+    }]);;
+
+
 $("body").ready(function(){
     var report_id = #{toJSON  rid};
     var wsaddr = "@{ReportR rid}".replace(/^http(s?):/,"ws$1:");
@@ -42,7 +48,7 @@ $("body").ready(function(){
         if (cls) { tag = '<span class="' + cls + '">'  }
         else { tag = '<span>' }
         $(tag).text(msg).append('<br>').appendTo(prompt);
-        $("body").animate({scrollTop: prompt.offset().top + prompt.height()}, "fast");
+        $("body").animate({scrollTop: prompt.offset().top + prompt.height()}, 10);
     };
     function normal(msg) { message(msg, "normal"); }
     function warn(msg) { message(msg, "warn"); }

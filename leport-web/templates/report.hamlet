@@ -37,13 +37,26 @@
               <button #delete-btn .btn-danger data-target="#delete-dialog" data-toggle="modal" .btn>
                 Delete
 
-       <div role="tabpanel" .tab-pane #multi-pane> 
+       <div role="tabpanel" .tab-pane #multi-pane ng-app="Multi" ng-controller="MultiCtrl"> 
          <div .row>
-          <div .col-xs-12 .col-sm-12>
+           <div .col-xs-12 .col-sm-12>
                <h4>Multiple Answer
                <button #multiChoose .btn-default .btn>ファイル選択
                <label for="multiFile" #multiLabel>
                <input type="file" #multiFile>
+         <div .row>
+              <table .table .table-striped>
+                <th>
+                  <td>
+                    \#
+                  <td>Name
+                  $forall r <- rates
+                      <td>#{ratingFunction r}
+                <tr ng-repeat="student in $scope.checkResults">
+                   <td>{{ student.id }}
+                   <td>{{ student.name }}
+                   $forall r <- rates
+                      <td>{{ student.#{ratingFunction r} }}
 
        <div role="tabpanel" .tab-pane #settings-pane> 
          <div .row>
