@@ -162,9 +162,11 @@ executeReport test ans
              -- `race` liftIO (threadDelay (10*10^(6 :: Int)))
       case r of
         Right (Left a)   -> lift (sendTextData $ fromQCResult (dropProp prop) a) >> loop ps
-        Right (Right ()) -> lift $ sendTextData $
-                            CheckResult (pack $ dropProp prop) False $
-                            "Timeout (10secs)"
+        Right (Right ()) -> do
+          lift $ sendTextData $
+            CheckResult (pack $ dropProp prop) False $
+            "Timeout (10secs)"
+          loop ps
         Left err -> lift $ sendTextData $ Exception $ showError err
 
 mainModule :: HSE.Exp -> Module
