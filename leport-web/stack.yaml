@@ -10,6 +10,4 @@ packages:
    extra-dep: true
 extra-deps:
 - yesod-markdown-0.9.4
-- hfsevents-0.1.5
-- cabal-helper-0.3.6.0
 resolver: lts-2.15
