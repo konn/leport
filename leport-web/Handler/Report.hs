@@ -11,7 +11,7 @@ import Language.Haskell.Exts        (Decl, ImportDecl (..))
 import Language.Haskell.Exts        (ImportSpec (IVar), Module (..))
 import Language.Haskell.Exts        (ModuleName (..), ModulePragma (..))
 import Language.Haskell.Exts        (Name (Ident))
-import Language.Haskell.Exts        (Namespace (NoNamespace))
+import Language.Haskell.Exts        (Namespace (NoNamespace),Exp(..))
 import Language.Haskell.Exts        (ParseResult (..), Tool (GHC), app)
 import Language.Haskell.Exts        (name, nameBind)
 import Language.Haskell.Exts        (prettyPrint, strE)
@@ -42,6 +42,9 @@ import System.IO (openFile)
 import qualified Language.Haskell.Exts as HSE
 import Yesod.Form.Bootstrap3 (renderBootstrap3)
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout(BootstrapBasicForm))
+import Control.Lens ((.~))
+import Control.Lens ((&))
+import Data.Generics
 
 getReportR :: ReportId -> Handler Html
 getReportR rid = do
@@ -117,18 +120,23 @@ executeReport test ans
     in withFile' fp $ \h -> withFile' rfp $ \hfp -> do
     $logDebug ("running: " <> pack fp)
     let propNs = extractProps test
-        missing = map (Ident . drop 5.prettyPrint) propNs L.\\ (extractFunNames ans ++ extractFunNames test)
+        funs = map (Ident . drop 5.prettyPrint) propNs
+        missing = funs L.\\ (extractFunNames ans ++ extractFunNames test)
         missDec = map (\p -> nameBind noLoc p (app (var $ name "error") $ strE "Not Implemented")) missing
         lans = foldr addDecl ans missDec
-        src = prettyPrint $ addPragmas [LanguagePragma noLoc [name "Safe"]
-                                       ,OptionsPragma noLoc  (Just GHC) "-fpackage-trust"] $
-              mergeModules "Check" test lans
+        src = prettyPrint $
+              (addPragmas [LanguagePragma noLoc [name "Safe"]
+                         ,OptionsPragma noLoc  (Just GHC) "-fpackage-trust"] $
+              lans) & _ModuleName .~ ModuleName "Check"
+                    & _ExportSpecs .~ Nothing
+        spec = mergeModules "Main" (mainModule [hs|return ()|]) $
+               everywhere (mkT $ foldr (.) id $ map qualifying funs)  test
     $logDebug $ "Check: " <> pack src
     hPutStrLn h src
     liftIO $ hClose h
-    hPutStrLn hfp $ prettyPrint $ mainModule [hs|return ()|]
+    hPutStrLn hfp $ prettyPrint spec
     liftIO $ hClose hfp
-    $logDebug $ "Main: " <> pack (prettyPrint $ mainModule [hs|return ()|])
+    $logDebug $ "Main: " <> pack (prettyPrint $ spec)
     $logDebug $ "written to: " ++ pack fp <> ", " <> pack rfp
     packdbs <- appPackageDBs . appSettings <$> getYesod
     trusted <- appTrustedPkgs . appSettings <$> getYesod
@@ -169,6 +177,10 @@ executeReport test ans
           loop ps
         Left err -> lift $ sendTextData $ Exception $ showError err
 
+qualifying :: Name -> Exp -> Exp
+qualifying n (Var (HSE.UnQual m)) | n == m = HSE.qvar (ModuleName "C") n
+qualifying _ e = e
+
 mainModule :: HSE.Exp -> Module
 mainModule mbody = Module noLoc (ModuleName "Main") [] Nothing Nothing
                    [ImportDecl
@@ -182,10 +194,10 @@ mainModule mbody = Module noLoc (ModuleName "Main") [] Nothing Nothing
                       False False Nothing Nothing $ Just (False, [HSE.IAbs $ Ident "threadDelay"])
                    ,ImportDecl noLoc (ModuleName "Test.QuickCheck") True False False Nothing
                           (Just (ModuleName "QC"))
-                         (Just (False, [IVar NoNamespace (name "quickCheckWithResult"),
-                                        IVar NoNamespace (name "property"),
-                                        IVar NoNamespace (name "chatty"),
-                                        IVar NoNamespace (name "stdArgs")]))
+                          Nothing
+                   ,ImportDecl noLoc (ModuleName "Test.QuickCheck.Exception") True False False Nothing
+                          (Just (ModuleName "QC"))
+                          Nothing
                    ,ImportDecl noLoc (ModuleName "Test.QuickCheck") False False False Nothing
                           Nothing
                          (Just (False, [IVar NoNamespace (name "Result")]))
@@ -219,9 +231,14 @@ withModule :: MonadIO m
            -> (Module -> WebSocketsT m ())
            -> WebSocketsT m ()
 withModule src f =
-  case parseModuleWithMode defaultParseMode {fixities = Nothing} $ unpack src of
+  case parseModuleWithMode defaultParseMode {fixities = Just $ myFixities} $ unpack src of
     ParseFailed loc err -> sendTextData $ Exception ["Parse error: " ++ tshow loc, pack err]
     ParseOk m -> f m
+
+myFixities :: [HSE.Fixity]
+myFixities = HSE.preludeFixities
+             ++ HSE.infixr_ 0 ["==>"]
+             ++ HSE.infixr_ 1 [".&&.", ".||."]
 
 addDecl :: Decl -> Module -> Module
 addDecl d (Module sl mn mps mws mes idls dls) = Module sl mn mps mws mes idls (d : dls)

@@ -90,7 +90,7 @@ instance FromJSON AppSettings where
 
         appPackageDBs             <- o .:? "package-dbs"      .!= []
         appTrustedPkgs            <- o .:? "trusted-packages" .!= []
-        appDistrustedPkgs            <- o .:? "distrusted-packages" .!= []
+        appDistrustedPkgs         <- o .:? "distrusted-packages" .!= []
 
         return AppSettings {..}
 

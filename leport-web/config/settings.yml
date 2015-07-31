@@ -38,5 +38,5 @@ distrusted-packages:
   ["process", "HTTP", "Cabal", "HUnit"
   ,"directory", "filepath", "ghc", "hint","ghc-prim"
   ,"network","terminfo","unix","zlib"]
-  
+
 #analytics: UA-YOURCODE
