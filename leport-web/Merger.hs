@@ -57,6 +57,7 @@ shrink add old =
       | any (`elem` exs) (extractFunNames_ pb) -> Nothing
     a -> Just a
 
+
 -- | Right-biased module merge
 mergeModules :: String -> Module -> Module -> Module
 mergeModules n (Module _ _ ps1 wt1 mex1 imp1 ds1) (Module l _ ps2 wt2 mex2 imp2 ds2) =
