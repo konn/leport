@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, PatternGuards #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, PatternGuards #-}
 module Main where
 import ClassyPrelude
 import Control.Distributed.Process.Backend.SimpleLocalnet

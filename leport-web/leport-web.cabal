@@ -169,3 +169,4 @@ executable         leport-worker
                      , distributed-process
                      , distributed-process-simplelocalnet
                      , leport-web
+                     , classy-prelude
