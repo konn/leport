@@ -170,3 +170,4 @@ executable         leport-worker
                      , distributed-process-simplelocalnet
                      , leport-web
                      , classy-prelude
+    ghc-options:       -threaded -O2 -rtsopts -with-rtsopts=-N
