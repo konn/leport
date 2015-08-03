@@ -51,6 +51,9 @@ import Control.Distributed.Process (spawn)
 import Control.Distributed.Process (spawnLocal)
 import qualified Control.Distributed.Process as CH
 import Control.Distributed.Process.Backend.SimpleLocalnet (redirectLogsHere)
+import Control.Distributed.Process (getSelfPid)
+import Control.Distributed.Process (reregister)
+import Yesod.Core.Types (loggerPutStr)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -75,6 +78,11 @@ makeFoundation appSettings = do
                     (appDistribPort appSettings) remoteTable
     appLocalNode <- newLocalNode appBackend
     appEvalQueue <- newTBMQueueIO 20
+    void $ forkProcess appLocalNode $ do
+      reregister "logger" =<< getSelfPid
+      forever $ do
+        str <- expect
+        liftIO $ loggerPutStr appLogger $ toLogStr (str :: String)
     queuePid  <- forkProcess appLocalNode $ do
       whileJust_ (atomically $ readTBMQueue appEvalQueue) $ \ (spec, input, chan) -> do
         let AppSettings{..} = appSettings
