@@ -77,7 +77,7 @@ evaluateReport queue = forever $ do
     let fp  = tdir ++ "/Check.hs"
         rfp = tdir ++ "/Main.hs"
     in withFile' fp $ \h -> withFile' rfp $ \hfp -> do
-    $logDebug ("running: " <> pack fp)
+    $logInfo ("running: " <> pack fp)
     withModule chan specSrc $ \test -> withModule chan input $ \ans -> do
       let propNs = extractProps test
           funs = map (Ident . drop 5.prettyPrint) propNs
@@ -97,22 +97,22 @@ evaluateReport queue = forever $ do
       hPutStrLn hfp $ prettyPrint spec
       liftIO $ hClose hfp
       $logDebug $ "Main: " <> pack (prettyPrint $ spec)
-      $logDebug $ "written to: " ++ pack fp <> ", " <> pack rfp
+      $logInfo $ "written to: " ++ pack fp <> ", " <> pack rfp
       eith <- runInterpreter $ do
         mapM_ (unsafeSetGhcOption . ("-trust " ++)) trusted
         mapM_ (unsafeSetGhcOption . ("-distrust " ++)) distrusted
         mapM_ (unsafeSetGhcOption . ("-package-db "++)) packdbs
-        lift $ $logDebug $ "Compiling: " <> pack fp <> ", " <> pack rfp
+        $logInfo $ "Compiling: " <> pack fp <> ", " <> pack rfp
         loadModules [fp, rfp]
-        lift $ $logDebug $ "Module Loaded."
+        $logInfo $ "Module Loaded."
         setTopLevelModules ["Main"]
         comp <- ME.try $ join $ liftIO <$> interpret "Main.main" (as :: IO ())
         case comp of
           Left err -> lift $ sendChan chan $ Exception $ showError err
           Right () -> do
-            $logDebug "successfully compiled."
+            $logInfo "successfully compiled."
             lift $ sendChan chan $ Information ["Compilation successed."]
-            $logDebug "booting..."
+            $logInfo "booting..."
             loop chan propNs
       case eith of
         Right a -> a <$ sendChan chan Finished
@@ -120,9 +120,9 @@ evaluateReport queue = forever $ do
   where
     loop _chan [] = return ()
     loop chan (prop:ps) = do
-      $logDebug $ "checking: " <> (tshow prop)
+      $logInfo $ "checking: " <> (tshow prop)
       let cmd = prettyPrint [hs|QC.quickCheckWithResult QC.stdArgs{QC.chatty=False} $(var prop) `race` threadDelay (10*10^6) |]
-      $logDebug $ "executing: " <> pack cmd
+      $logInfo $ "executing: " <> pack cmd
       r <- ME.try $ join $ liftIO <$> interpret cmd (as :: IO (Either QC.Result ()))
              -- `race` liftIO (threadDelay (10*10^(6 :: Int)))
       case r of

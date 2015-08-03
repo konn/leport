@@ -92,13 +92,14 @@ makeFoundation appSettings = do
                   Exception{} -> atomically $ closeTBMQueue chan
                   _ -> loop
           loop
-          $logDebug "finished report"
+          $logInfo "finished rating some report"
 
     ps <- (\a -> newIORef (a,a)) . HS.fromList =<< findPeers appBackend 1000000
     void $ forkProcess appLocalNode $ forever $ do
       (acc, olds) <- readIORef ps
       procs <- forM (toList olds) $ \p ->
-        spawn p $ $(mkClosure 'evaluateReport) queuePid
+        spawn p ($(mkClosure 'evaluateReport) queuePid)
+          <* $logInfo ("spawned to " <> tshow p)
       redirectLogsHere appBackend procs
       threadDelay (5*10^(6 :: Integer))
       incomings <- liftIO $ HS.fromList <$> findPeers appBackend 1000000
