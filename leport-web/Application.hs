@@ -54,6 +54,7 @@ import Control.Distributed.Process.Backend.SimpleLocalnet (redirectLogsHere)
 import Control.Distributed.Process (getSelfPid)
 import Control.Distributed.Process (reregister)
 import Yesod.Core.Types (loggerPutStr)
+import Control.Distributed.Process.Backend.SimpleLocalnet (findSlaves)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -100,20 +101,20 @@ makeFoundation appSettings = do
                   Exception{} -> atomically $ closeTBMQueue chan
                   _ -> loop
           loop
-          -- $logInfo "finished rating some report"
-          putStrLn "finished rating some report"
+          $logInfo "finished rating some report"
 
-    ps <- (\a -> newIORef (a,a)) . HS.fromList =<< findPeers appBackend 1000000
-    void $ forkProcess appLocalNode $ forever $ do
-      (acc, olds) <- readIORef ps
+    void $ forkProcess appLocalNode $ do
+      ns <- (\a -> newIORef (a,a)) . HS.fromList =<< findSlaves appBackend
+      forever $ do
+      (acc, olds) <- readIORef ns
       procs <- forM (toList olds) $ \p ->
-        spawn p ($(mkClosure 'evaluateReport) queuePid)
-          <* putStrLn ("spawned to " <> tshow p)
-      -- redirectLogsHere appBackend procs
+        spawn (CH.processNodeId p) ($(mkClosure 'evaluateReport) queuePid)
+          <* $logInfo ("spawned to " <> tshow p)
+      redirectLogsHere appBackend procs
       threadDelay (5*10^(6 :: Integer))
-      incomings <- liftIO $ HS.fromList <$> findPeers appBackend 1000000
+      incomings <- HS.fromList <$> findSlaves appBackend
       let news = incomings `HS.difference` acc
-      writeIORef ps (incomings, news)
+      writeIORef ns (incomings, news)
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
