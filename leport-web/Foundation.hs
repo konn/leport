@@ -108,7 +108,7 @@ instance Yesod App where
 
     isAuthorized SettingsR _ = requireNormal
     isAuthorized (ReportR _) _ = requireNormal
-      
+
     isAuthorized AdminR _ = requireAdmin
     isAuthorized UserR _ = requireAdmin
 

@@ -78,11 +78,6 @@ makeFoundation appSettings = do
                     (appDistribPort appSettings) remoteTable
     appLocalNode <- newLocalNode appBackend
     appEvalQueue <- newTBMQueueIO 20
-    void $ forkProcess appLocalNode $ do
-      reregister "logger" =<< getSelfPid
-      forever $ do
-        str <- expect
-        liftIO $ loggerPutStr appLogger $ toLogStr (str :: String)
     queuePid  <- forkProcess appLocalNode $ do
       whileJust_ (atomically $ readTBMQueue appEvalQueue) $ \ (spec, input, chan) -> do
         let AppSettings{..} = appSettings
