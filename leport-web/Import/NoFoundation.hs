@@ -6,6 +6,7 @@ import ClassyPrelude.Yesod             as Import
 import Control.Concurrent.STM.TBMQueue as Import
 import Lens                            as Import
 import Model                           as Import
+import RPC                             as Import
 import Settings                        as Import
 import Settings.StaticFiles            as Import
 import Types                           as Import

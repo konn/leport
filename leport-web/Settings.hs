@@ -61,6 +61,7 @@ data AppSettings = AppSettings
     , appPackageDBs :: [Text]
     , appTrustedPkgs :: [String]
     , appDistrustedPkgs :: [String]
+    , appDistribPort :: String
     }
 
 instance FromJSON AppSettings where
@@ -90,6 +91,9 @@ instance FromJSON AppSettings where
         appPackageDBs             <- o .:? "package-dbs"      .!= []
         appTrustedPkgs            <- o .:? "trusted-packages" .!= []
         appDistrustedPkgs         <- o .:? "distrusted-packages" .!= []
+
+        appDistribPort            <- (fmap (show :: Int -> String) <$> o .:? "distributed-port")
+                                     .!= ""
 
         return AppSettings {..}
 

@@ -23,6 +23,8 @@ import Control.Monad.Random (StdGen)
 import Control.Monad.Random (random, randomR, randomRs)
 import Control.Monad.Random (randoms)
 import Control.Monad.Random (split)
+import Control.Distributed.Process.Node (LocalNode)
+import Control.Distributed.Process.Backend.SimpleLocalnet (Backend)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -35,6 +37,9 @@ data App = App
     , appHttpManager :: Manager
     , appLogger      :: Logger
     , appRandomGen   :: IORef StdGen
+    , appBackend     :: Backend
+    , appLocalNode   :: LocalNode
+    , appEvalQueue   :: TBMQueue (Text, Text, TBMQueue ReportEvent)
     }
 
 instance HasHttpManager App where

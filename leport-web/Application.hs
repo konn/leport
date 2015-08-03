@@ -27,6 +27,13 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              mkRequestLogger, outputFormat)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
+import Control.Monad.Random (newStdGen)
+import Control.Distributed.Process.Backend.SimpleLocalnet (initializeBackend)
+import Control.Distributed.Process.Backend.SimpleLocalnet (newLocalNode)
+import Control.Distributed.Process.Node (forkProcess)
+import Control.Concurrent.Lifted (threadDelay)
+import Control.Distributed.Process.Backend.SimpleLocalnet (findPeers)
+import Control.Monad.Loops (whileJust_)
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
@@ -36,7 +43,13 @@ import Handler.Admin
 import Handler.Settings
 import Handler.Register
 import Handler.Report
-import Control.Monad.Random (newStdGen)
+import qualified Data.HashSet as HS
+import Control.Distributed.Process (expect)
+import Control.Distributed.Process (send)
+import Control.Distributed.Process.Closure (mkClosure)
+import Control.Distributed.Process (spawn)
+import Control.Distributed.Process (spawnLocal)
+import qualified Control.Distributed.Process as CH
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -57,6 +70,36 @@ makeFoundation appSettings = do
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
     appRandomGen <- newIORef =<< newStdGen
+    appBackend <- initializeBackend "localhost"
+                    (appDistribPort appSettings) remoteTable
+    appLocalNode <- newLocalNode appBackend
+    appEvalQueue <- newTBMQueueIO 20
+    queuePid  <- forkProcess appLocalNode $ do
+      whileJust_ (atomically $ readTBMQueue appEvalQueue) $ \ (spec, input, chan) -> do
+        let AppSettings{..} = appSettings
+        them <- expect
+        void $ spawnLocal $ do
+          (p, recv) <- CH.newChan
+          send them $
+            RatingSettings (map unpack appPackageDBs) appTrustedPkgs appDistrustedPkgs
+            (unpack spec) (unpack input) p
+          let loop = do
+                coming <- CH.receiveChan recv
+                atomically $ writeTBMQueue chan coming
+                case coming of
+                  Finished    -> atomically $ closeTBMQueue chan
+                  Exception{} -> atomically $ closeTBMQueue chan
+                  _ -> loop
+          loop
+
+    ps <- newIORef . HS.fromList =<< findPeers appBackend 1000000
+    void $ forkProcess appLocalNode $ forever $ do
+      olds <- readIORef ps
+      forM_ olds $ \p -> void $ spawn p $ $(mkClosure 'evaluateReport) queuePid
+      threadDelay (5*10^(6 :: Integer))
+      incomings <- liftIO $ HS.fromList <$> findPeers appBackend 1000000
+      let news = incomings `HS.difference` olds
+      writeIORef ps news
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a

@@ -39,4 +39,6 @@ distrusted-packages:
   ,"directory", "filepath", "ghc", "hint","ghc-prim"
   ,"network","terminfo","unix","zlib"]
 
+distributed-port: 44444
+
 #analytics: UA-YOURCODE

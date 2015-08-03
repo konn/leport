@@ -5,6 +5,7 @@ module Types where
 import ClassyPrelude
 import Data.Binary (Binary)
 import Orphans ()
+import Control.Distributed.Process (SendPort)
 import ClassyPrelude.Yesod
 import Data.Aeson          (decode, encode)
 import Data.Data           (Data)
@@ -59,5 +60,15 @@ instance WebSocketsData ReportEvent where
 data Access = Normal
             | Admin
               deriving (Read, Show, Eq, Ord)
+
+
+data RatingSettings = RatingSettings { ratingPackDBs    :: [String]
+                                     , ratingTrusteds   :: [String]
+                                     , ratingDistrusted :: [String]
+                                     , ratingSpec       :: String
+                                     , ratingAnswer     :: String
+                                     , ratingPort :: SendPort ReportEvent
+                                     } deriving (Typeable, Generic)
+instance Binary RatingSettings
 
 derivePersistField "Access"
