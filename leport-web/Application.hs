@@ -100,7 +100,7 @@ makeFoundation appSettings = do
       procs <- forM (toList olds) $ \p ->
         spawn p ($(mkClosure 'evaluateReport) queuePid)
           <* $logInfo ("spawned to " <> tshow p)
-      redirectLogsHere appBackend procs
+      -- redirectLogsHere appBackend procs
       threadDelay (5*10^(6 :: Integer))
       incomings <- liftIO $ HS.fromList <$> findPeers appBackend 1000000
       let news = incomings `HS.difference` acc
