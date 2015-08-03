@@ -27,12 +27,17 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              mkRequestLogger, outputFormat)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
-import Control.Monad.Random (newStdGen)
-import Control.Distributed.Process.Backend.SimpleLocalnet (initializeBackend)
-import Control.Distributed.Process.Backend.SimpleLocalnet (newLocalNode)
+import Control.Distributed.Process (WhereIsReply(..), expect, kill, processNodeId,
+                                    registerRemoteAsync, send, spawn, spawnLocal, whereisRemoteAsync)
+import qualified Control.Distributed.Process as CH
+import Control.Distributed.Process.Backend.SimpleLocalnet (findSlaves, initializeBackend, newLocalNode)
+import Control.Distributed.Process.Closure (mkClosure)
+import Control.Distributed.Process.Extras.Time (seconds)
+import Control.Distributed.Process.Extras.Timer (sleep)
 import Control.Distributed.Process.Node (forkProcess)
-import Control.Concurrent.Lifted (threadDelay)
 import Control.Monad.Loops (whileJust_)
+import Control.Monad.Random (newStdGen)
+import Data.Maybe (fromJust)
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
@@ -42,18 +47,6 @@ import Handler.Admin
 import Handler.Settings
 import Handler.Register
 import Handler.Report
-import qualified Data.HashSet as HS
-import Control.Distributed.Process (expect)
-import Control.Distributed.Process (send)
-import Control.Distributed.Process.Closure (mkClosure)
-import Control.Distributed.Process (spawn)
-import Control.Distributed.Process (spawnLocal)
-import qualified Control.Distributed.Process as CH
-import Control.Distributed.Process.Backend.SimpleLocalnet (redirectLogsHere)
-import Control.Distributed.Process (getSelfPid)
-import Control.Distributed.Process (reregister)
-import Yesod.Core.Types (loggerPutStr)
-import Control.Distributed.Process.Backend.SimpleLocalnet (findSlaves)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -98,17 +91,21 @@ makeFoundation appSettings = do
           $logInfo "finished rating some report"
 
     void $ forkProcess appLocalNode $ do
-      ns <- (\a -> newIORef (a,a)) . HS.fromList =<< findSlaves appBackend
+      ss <- findSlaves appBackend
+      forM_ ss $ \p -> do
+        whereisRemoteAsync (processNodeId p) "hint"
+        WhereIsReply "hint" mpid <- expect
+        when (isJust mpid) $ kill (fromJust mpid) "new server"
       forever $ do
-      (acc, olds) <- readIORef ns
-      procs <- forM (toList olds) $ \p ->
-        spawn (CH.processNodeId p) ($(mkClosure 'evaluateReport) queuePid)
-          <* $logInfo ("spawned to " <> tshow p)
-      redirectLogsHere appBackend procs
-      threadDelay (5*10^(6 :: Integer))
-      incomings <- HS.fromList <$> findSlaves appBackend
-      let news = incomings `HS.difference` acc
-      writeIORef ns (incomings, news)
+        slaves <- findSlaves appBackend
+        forM_ slaves $ \p -> do
+          whereisRemoteAsync (processNodeId p) "hint"
+          WhereIsReply "hint" mpid <- expect
+          when (isNothing mpid) $ do
+            n <- spawn (CH.processNodeId p) ($(mkClosure 'evaluateReport) queuePid)
+            registerRemoteAsync (processNodeId n) "hint" n
+            $logInfo ("spawned to " <> tshow p)
+        sleep (seconds 5)
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
