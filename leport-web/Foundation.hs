@@ -10,7 +10,6 @@ import Yesod.Default.Util   (addStaticContentExternal)
 import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.Auth.HashDB (authHashDB)
-import Handler.Fay
 import Language.Haskell.Exts (Module)
 import Language.Haskell.Exts (ParseResult (..))
 import Language.Haskell.Exts (SrcLoc (..))
@@ -18,6 +17,7 @@ import Language.Haskell.Exts (prettyPrint)
 import Merger
 import Language.Haskell.Exts (defaultParseMode,fixities)
 import Language.Haskell.Exts (parseModuleWithMode)
+import Yesod.Form.Jquery
 import Control.Monad.Random (MonadRandom(..))
 import Control.Monad.Random (StdGen)
 import Control.Monad.Random (random, randomR, randomRs)
@@ -188,10 +188,6 @@ instance YesodAuthPersist App
 
 instance YesodJquery App where
   urlJqueryJs = const $ Right "//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"
-
-instance YesodFay App where
-  yesodFayCommand = handleFay
-  fayRoute = FaySiteR
 
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.

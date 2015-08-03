@@ -21,7 +21,6 @@ import Yesod.Default.Util (defaultTemplateLanguages)
 import Yesod.Default.Util (TemplateLanguage(..))
 import Yesod.Markdown (markdownToHtml, Markdown(..))
 import Text.Shakespeare.Text (textFile, textFileReload)
-import Yesod.Fay
 import Language.Haskell.TH (Exp(ConE))
 import Language.Haskell.TH (mkName)
 
@@ -116,6 +115,7 @@ combineSettings = def
 -- The rest of this file contains settings which rarely need changing by a
 -- user.
 
+{-
 fayFile :: String -> Q Exp
 fayFile fp =
   let setting = (yesodFaySettings fp)
@@ -124,7 +124,7 @@ fayFile fp =
   in if appReloadTemplates compileTimeAppSettings
      then fayFileReload setting
      else fayFileProd   setting
-
+-}
 
 widgetFile :: String -> Q Exp
 widgetFile = (if appReloadTemplates compileTimeAppSettings

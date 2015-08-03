@@ -6,6 +6,7 @@ import Import
 import Language.Haskell.Exts (prettyPrint)
 import Merger
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3)
+import Yesod.Form.Jquery
 
 postRegisterR :: Handler Html
 postRegisterR = do

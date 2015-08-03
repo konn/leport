@@ -11,8 +11,6 @@
 
 /settings SettingsR  GET  POST
 
-
-/api      FaySiteR  FaySite getFaySite
 /report/#ReportId ReportR GET DELETE PUT POST
 /report/#ReportId/delete DeleteReportR POST
 /report RegisterR GET POST

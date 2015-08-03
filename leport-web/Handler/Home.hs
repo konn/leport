@@ -1,6 +1,5 @@
 module Handler.Home where
 
-import Handler.Fay
 import Import
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (BootstrapBasicForm))
 import Yesod.Form.Bootstrap3 (renderBootstrap3)

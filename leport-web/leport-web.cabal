@@ -12,7 +12,7 @@ Flag library-only
     Default:       False
 
 library
-    hs-source-dirs: ., app, fay-shared
+    hs-source-dirs: ., app
     other-modules:   Lens
     exposed-modules: Application
                      Foundation
@@ -20,13 +20,12 @@ library
                      Import.NoFoundation
                      Model
                      Macros
+                     Orphans
                      Settings
                      Settings.StaticFiles
-                     SharedTypes
                      Handler.Common
                      Handler.Home
                      Handler.Admin
-                     Handler.Fay
                      Handler.Settings
                      Handler.Report
                      Handler.Register
@@ -61,6 +60,7 @@ library
                  , QuickCheck >= 2.7.6
                  , aeson                         >= 0.6        && < 0.9
                  , base                          >= 4          && < 5
+                 , binary >= 0.7.1.0
                  , bytestring                    >= 0.9        && < 0.11
                  , classy-prelude                >= 0.10.2
                  , classy-prelude-conduit        >= 0.10.2
@@ -73,9 +73,6 @@ library
                  , exceptions >= 0.8.0.2
                  , fast-logger                   >= 2.2        && < 2.4
                  , fay >= 0.23.1.6
-                 , fay-jquery >= 0.6.0.3
-                 , fay-ref >= 0.1.0.0
-                 , fay-text >= 0.3.2.2
                  , file-embed
                  , ghc >= 7.8.3
                  , ghc-mtl >= 1.2.1.0
@@ -85,8 +82,10 @@ library
                  , hjsmin                        >= 0.1        && < 0.2
                  , http-conduit                  >= 2.1        && < 2.2
                  , lens >= 4.7.0.1
+                 , lifted-base >= 0.2.3.6
                  , monad-control                 >= 0.3        && < 1.1
                  , monad-logger                  >= 0.3        && < 0.4
+                 , monad-loops >= 0.4.3
                  , persistent                    >= 2.0        && < 2.2
                  , persistent-sqlite             >= 2.1.1      && < 2.2
                  , persistent-template           >= 2.0        && < 2.2
@@ -94,6 +93,7 @@ library
                  , pwstore-fast >= 2.4.4
                  , safe
                  , shakespeare                   >= 2.0        && < 2.1
+                 , stm-chans >= 3.0.0.4
                  , syb >= 0.4.4
                  , template-haskell
                  , temporary >= 1.2.0.3
@@ -110,7 +110,6 @@ library
                  , yesod-auth                    >= 1.4.0      && < 1.5
                  , yesod-auth-hashdb >= 1.4.2.2
                  , yesod-core                    >= 1.4.6      && < 1.5
-                 , yesod-fay >= 0.7.1
                  , yesod-form                    >= 1.4.0      && < 1.5
                  , yesod-markdown >= 0.9.4
                  , yesod-static                  >= 1.4.0.3    && < 1.5

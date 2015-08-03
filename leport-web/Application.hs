@@ -36,7 +36,6 @@ import Handler.Admin
 import Handler.Settings
 import Handler.Register
 import Handler.Report
-import Handler.Fay
 import Control.Monad.Random (newStdGen)
 
 -- This line actually creates our YesodDispatch instance. It is the second half

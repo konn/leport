@@ -35,6 +35,7 @@ import qualified Data.List as L
 import qualified Control.Monad.Catch as ME
 import Language.Haskell.Interpreter (InterpreterT)
 import Control.Monad.Logger (monadLoggerLog)
+import Yesod.Form.Jquery
 import qualified Data.ByteString.Lazy as LBS
 import System.IO.Temp (withSystemTempDirectory)
 import System.IO (IOMode(ReadWriteMode))
