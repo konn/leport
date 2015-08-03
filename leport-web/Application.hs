@@ -95,7 +95,9 @@ makeFoundation appSettings = do
       forM_ ss $ \p -> do
         whereisRemoteAsync (processNodeId p) "hint"
         WhereIsReply "hint" mpid <- expect
-        when (isJust mpid) $ kill (fromJust mpid) "new server"
+        when (isJust mpid) $ do
+          kill (fromJust mpid) "new server"
+          $logDebug $ "killed: " <> tshow mpid
       forever $ do
         slaves <- findSlaves appBackend
         forM_ slaves $ \p -> do
