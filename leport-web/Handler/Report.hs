@@ -79,7 +79,6 @@ executeReport test ans = do
   atomically $ writeTBMQueue qs (test, ans, q)
   whileJust_ (atomically $ readTBMQueue q) sendTextData
 
-
 putReportR :: ReportId -> Handler Html
 putReportR = redirect . ReportR
 
