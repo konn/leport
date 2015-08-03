@@ -78,6 +78,7 @@ makeFoundation appSettings = do
                     (appDistribPort appSettings) remoteTable
     appLocalNode <- newLocalNode appBackend
     appEvalQueue <- newTBMQueueIO 20
+    putStrLn "foooo"
     void $ forkProcess appLocalNode $ do
       reregister "logger" =<< getSelfPid
       forever $ do
