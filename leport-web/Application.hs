@@ -47,6 +47,7 @@ import Handler.Admin
 import Handler.Settings
 import Handler.Register
 import Handler.Report
+import Control.Distributed.Process.Extras.Time (minutes)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -107,7 +108,7 @@ makeFoundation appSettings = do
             n <- spawn (CH.processNodeId p) ($(mkClosure 'evaluateReport) queuePid)
             registerRemoteAsync (processNodeId n) "hint" n
             $logInfo ("spawned to " <> tshow p)
-        sleep (seconds 5)
+        sleep (minutes 5)
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
