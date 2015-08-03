@@ -143,12 +143,13 @@ instance Yesod App where
 
     makeLogger = return . appLogger
 
-requireNormal :: (YesodAuthPersist master, PersistEntity (AuthEntity master), Typeable (AuthEntity master), AuthId master ~ Key (AuthEntity master)) => HandlerT master IO AuthResult
+requireNormal :: (YesodAuthPersist master, PersistEntity (AuthEntity master), Typeable (AuthEntity master), AuthId master ~ Key (AuthEntity master), Show (AuthEntity master)) => HandlerT master IO AuthResult
 requireNormal = do
     ma <- maybeAuth
+    $logDebug ("auth: " <> tshow ma)
     case ma of
-      Nothing -> return $ Unauthorized "You must be logged in."
-      Just _  -> return $ Authorized
+      Nothing -> $logDebug "login failed!" >> return (Unauthorized "You must be logged in.")
+      Just _  -> return Authorized
 
 requireAdmin :: (YesodAuthPersist master, AuthEntity master ~ User, AuthId master ~ Key User) => HandlerT master IO AuthResult
 requireAdmin = do
