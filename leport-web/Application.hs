@@ -32,7 +32,6 @@ import Control.Distributed.Process.Backend.SimpleLocalnet (initializeBackend)
 import Control.Distributed.Process.Backend.SimpleLocalnet (newLocalNode)
 import Control.Distributed.Process.Node (forkProcess)
 import Control.Concurrent.Lifted (threadDelay)
-import Control.Distributed.Process.Backend.SimpleLocalnet (findPeers)
 import Control.Monad.Loops (whileJust_)
 
 -- Import all relevant handler modules here.
