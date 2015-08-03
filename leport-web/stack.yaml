@@ -10,4 +10,5 @@ packages:
    extra-dep: true
 extra-deps:
 - yesod-markdown-0.9.4
+- distributed-process-monad-control-0.5.1
 resolver: lts-2.15
