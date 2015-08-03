@@ -78,7 +78,6 @@ makeFoundation appSettings = do
                     (appDistribPort appSettings) remoteTable
     appLocalNode <- newLocalNode appBackend
     appEvalQueue <- newTBMQueueIO 20
-    putStrLn "foooo"
     void $ forkProcess appLocalNode $ do
       reregister "logger" =<< getSelfPid
       forever $ do
@@ -113,7 +112,7 @@ makeFoundation appSettings = do
       threadDelay (5*10^(6 :: Integer))
       incomings <- liftIO $ HS.fromList <$> findPeers appBackend 1000000
       let news = incomings `HS.difference` acc
-      writeIORef ps (HS.union acc news, news)
+      writeIORef ps (incomings, news)
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
