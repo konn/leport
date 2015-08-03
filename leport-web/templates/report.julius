@@ -6,7 +6,7 @@ angular.module('Multi', [])
 
 $("body").ready(function(){
     var report_id = #{toJSON  rid};
-    var wsaddr = "@{ReportR rid}".replace("#{toJSON root}", "#{toJSON wsAddr}");
+    var wsaddr = "@{ReportR rid}".replace(#{toJSON root}, #{toJSON wsAddr});
     var codeMirrorConf = {mode: 'haskell',
                           matchBrackets: true,
                           lineNumbers: true,
