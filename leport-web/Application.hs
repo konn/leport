@@ -50,6 +50,7 @@ import Control.Distributed.Process.Closure (mkClosure)
 import Control.Distributed.Process (spawn)
 import Control.Distributed.Process (spawnLocal)
 import qualified Control.Distributed.Process as CH
+import Control.Distributed.Process.Backend.SimpleLocalnet (redirectLogsHere)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -91,11 +92,14 @@ makeFoundation appSettings = do
                   Exception{} -> atomically $ closeTBMQueue chan
                   _ -> loop
           loop
+          $logDebug "finished report"
 
     ps <- newIORef . HS.fromList =<< findPeers appBackend 1000000
     void $ forkProcess appLocalNode $ forever $ do
       olds <- readIORef ps
-      forM_ olds $ \p -> void $ spawn p $ $(mkClosure 'evaluateReport) queuePid
+      procs <- forM (toList olds) $ \p ->
+        spawn p $ $(mkClosure 'evaluateReport) queuePid
+      redirectLogsHere appBackend procs
       threadDelay (5*10^(6 :: Integer))
       incomings <- liftIO $ HS.fromList <$> findPeers appBackend 1000000
       let news = incomings `HS.difference` olds
