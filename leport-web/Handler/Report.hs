@@ -58,8 +58,8 @@ rateReport Report{..} =
   where
     loop = receiveData >>= \case
       Single input -> do
-          $logDebug ("executing single report")
-          executeReport reportSpec input
+        $logDebug ("executing single report")
+        executeReport reportSpec input
       Multiple -> do
         zipped <- receiveData
         $logDebug $ "Rec'ved size: " <> tshow (length zipped)
