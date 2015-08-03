@@ -21,8 +21,7 @@ import Yesod.Default.Util (defaultTemplateLanguages)
 import Yesod.Default.Util (TemplateLanguage(..))
 import Yesod.Markdown (markdownToHtml, Markdown(..))
 import Text.Shakespeare.Text (textFile, textFileReload)
-import Language.Haskell.TH (Exp(ConE))
-import Language.Haskell.TH (mkName)
+import qualified Data.Text as T
 
 -- | Runtime settings to configure this application. These settings can be
 -- loaded from various sources: defaults, environment variables, config files,
@@ -62,6 +61,7 @@ data AppSettings = AppSettings
     , appTrustedPkgs :: [String]
     , appDistrustedPkgs :: [String]
     , appDistribPort :: String
+    , appWSAddress :: Text
     }
 
 instance FromJSON AppSettings where
@@ -94,6 +94,9 @@ instance FromJSON AppSettings where
 
         appDistribPort            <- (fmap (show :: Int -> String) <$> o .:? "distributed-port")
                                      .!= ""
+
+        appWSAddress            <- o .:? "websock-addr"
+                                     .!= T.replace "http" "ws" appRoot
 
         return AppSettings {..}
 

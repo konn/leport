@@ -23,12 +23,13 @@ getReportR rid = do
 serveReportR :: Key Report -> Report -> Widget -> Enctype -> HandlerT App IO Html
 serveReportR rid Report{..} wid enc = do
   rates <- map entityVal <$> runDB (selectList [ RatingReportId ==. rid ] [])
+  wsAddr <- appWSAddress . appSettings <$> getYesod
+  root   <- appRoot . appSettings <$> getYesod
   defaultLayout $ do
     setTitle $ toHtml reportTitle
     addScriptEither . urlJqueryJs =<< getYesod 
     addScript $ StaticR js_bootstrap_min_js
     addScriptRemote "//ajax.googleapis.com/ajax/libs/angularjs/1.2.0-rc.3/angular.min.js"
-    -- $(fayFile "Report")
     $(widgetFile "report")
 
 
