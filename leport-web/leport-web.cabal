@@ -159,18 +159,13 @@ executable         registerer
                      , yesod-markdown >= 0.9.4
 
 executable         leport-worker
-    hs-source-dirs: app, .
+    hs-source-dirs: app
     if flag(library-only)
         Buildable: False
 
     main-is:           leport-worker.hs
     hs-source-dirs:    test
-    if os(linux)
-       build-depends: lxc
-    else
-       other-modules:   LXC.Compat
     build-depends:     base
-                     , hint
-                     , yaml
-                     , haskell-src-exts
                      , distributed-process
+                     , distributed-process-simplelocalnet
+                     , leport-web
