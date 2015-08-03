@@ -105,9 +105,6 @@ rateReport Report{..} =
             sendTextData $ Information $
               "Files: " : map pack (filesInArchive arch)
 
-instance MonadLogger m => MonadLogger (InterpreterT m) where
-  monadLoggerLog loc src lvl msg = lift $ monadLoggerLog loc src lvl msg
-
 withFile' :: MonadBaseControl IO m => String -> (Handle -> m b) -> m b
 withFile' fp = withAcquire (mkAcquire (openFile fp ReadWriteMode) hClose)
 
